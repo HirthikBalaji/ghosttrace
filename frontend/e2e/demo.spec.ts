@@ -35,10 +35,27 @@ test("full demo flow: seed → investigate → plan → verify → brain → mem
   await expect(page.getByText(/only under conservative_defense/)).toBeVisible();
   await axe(page, "containment");
 
+  // model advisor: the AI proposes, the graph disposes
+  await expect(page.getByText("Model advisor — the AI proposes, the graph disposes")).toBeVisible();
+  await expect(page.getByText("✕ rejected").first()).toBeVisible();
+  await expect(page.getByText("✔ accepted").first()).toBeVisible();
+  // human approval of the k=1 plan requires acknowledging the scrutiny-flagged action
+  const approve = page.getByRole("button", { name: "Approve plan" });
+  await expect(approve).toBeDisabled();
+  await page.getByRole("checkbox", { name: /independently checked the scrutiny-flagged/ }).check();
+  await page.getByLabel("Decision note").fill("e2e: checked shared-config access logs");
+  await approve.click();
+  await expect(page.getByRole("status").filter({ hasText: "Approved" })).toContainText("no executor");
   await page.getByRole("button", { name: /Open certificate/ }).first().click();
   await page.getByRole("button", { name: /Verify with independent verifier/ }).click();
   await expect(page.getByRole("status")).toContainText("ACCEPTED");
   await axe(page, "certificate");
+
+  await page.locator("nav").getByRole("button", { name: "Story mode" }).click();
+  await expect(page.getByRole("heading", { name: /Disabling the account does not contain it/ })).toBeVisible();
+  await page.getByRole("button", { name: "Verify the k=0 certificate now" }).click();
+  await expect(page.getByRole("status")).toContainText("ACCEPTED by the independent verifier");
+  await axe(page, "story");
 
   await page.locator("nav").getByRole("button", { name: "Company Brain" }).click();
   await page.getByRole("button", { name: /Compare: as known then/ }).click();

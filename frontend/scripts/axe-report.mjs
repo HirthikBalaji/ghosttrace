@@ -4,7 +4,7 @@ import { chromium } from "@playwright/test";
 
 const b = await chromium.launch();
 const p = await (await b.newContext()).newPage();
-await p.goto("http://localhost:4173/" + (process.argv[2] ?? ""));
+await p.goto((process.env.BASE ?? "http://localhost:4173/") + (process.argv[2] ?? ""));
 await p.waitForTimeout(2500);
 const r = await new AxeBuilder({ page: p }).withTags(["wcag2a", "wcag2aa"]).analyze();
 for (const v of r.violations)

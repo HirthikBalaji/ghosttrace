@@ -179,6 +179,7 @@ export function InvestigationPage({ invId, go }: { invId: string; go: (r: Route,
         <div className="row">
           {["created", "failed"].includes(inv.status) && <button className="btn primary" onClick={run}>Run investigation</button>}
           {inv.status === "running" && <button className="btn danger" onClick={cancel}>Cancel</button>}
+          <button className="btn" onClick={() => go("story")}>▶ Story mode</button>
           <button className="btn" onClick={() => go("containment")}>Containment →</button>
         </div>
       </div>

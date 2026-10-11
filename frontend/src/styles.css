@@ -6,7 +6,7 @@
   --ink-2: #4a5263;
   --ink-3: #596174;
   --line: #dde1e8;
-  --accent: #3355dd;
+  --accent: #2a47c2;
   --accent-ink: #ffffff;
   --ok: #126b32;
   --ok-bg: #e5f5ea;
@@ -164,3 +164,6 @@ pre.json { background: var(--panel-2); border: 1px solid var(--line); border-rad
 }
 .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .pareto text{pointer-events:none}
+.story-step h2 .badge{font-size:13px;margin-right:6px}
+main:focus{outline:none}
+.pareto{max-width:680px}

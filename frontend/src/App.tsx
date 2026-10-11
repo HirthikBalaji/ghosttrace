@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CommandCenter } from "./pages/CommandCenter";
+import { StoryPage } from "./pages/Story";
 import { InvestigationPage } from "./pages/Investigation";
 import { HypothesesPage } from "./pages/Hypotheses";
 import { ContainmentPage } from "./pages/Containment";
@@ -11,9 +12,10 @@ import { authMode, signOut } from "./auth";
 
 export interface Me { subject: string; roles: string[]; auth_mode: string; warning: string | null }
 
-export type Route = "command" | "investigation" | "hypotheses" | "containment" | "certificate" | "brain" | "memory";
+export type Route = "command" | "story" | "investigation" | "hypotheses" | "containment" | "certificate" | "brain" | "memory";
 const NAV: { id: Route; label: string; icon: string; needsInv?: boolean }[] = [
   { id: "command", label: "Command center", icon: "◉" },
+  { id: "story", label: "Story mode", icon: "▶", needsInv: true },
   { id: "investigation", label: "Investigation", icon: "⌘", needsInv: true },
   { id: "hypotheses", label: "Hypotheses", icon: "⚖", needsInv: true },
   { id: "containment", label: "Containment", icon: "⛨", needsInv: true },
@@ -85,6 +87,7 @@ export default function App() {
         </nav>
         <main id="main" tabIndex={-1}>
           {loc.route === "command" && <CommandCenter onOpen={(id) => go("investigation", id)} />}
+          {loc.route === "story" && inv && <StoryPage invId={inv} go={go} />}
           {loc.route === "investigation" && inv && <InvestigationPage invId={inv} go={go} />}
           {loc.route === "hypotheses" && inv && <HypothesesPage invId={inv} />}
           {loc.route === "containment" && inv && <ContainmentPage invId={inv} go={go} me={me} />}

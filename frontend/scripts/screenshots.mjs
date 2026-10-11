@@ -6,7 +6,7 @@ const p = await b.newPage({ viewport: { width: 1500, height: 1000 } });
 const errs = [];
 p.on("console", (m) => m.type() === "error" && errs.push(m.text()));
 p.on("pageerror", (e) => errs.push(String(e)));
-await p.goto("http://localhost:4173/");
+await p.goto(process.env.BASE ?? "http://localhost:4173/");
 await p.getByRole("button", { name: /Reset scenario & investigate/ }).first().click();
 await p.waitForURL(/investigation/);
 await p.waitForSelector("text=memory curator");
