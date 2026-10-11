@@ -93,7 +93,7 @@ def test_progress_events_stream(falkor: GraphClient, ws: str):
         c.stream(
             "GET",
             f"/api/v1/investigations/{inv['id']}/events",
-            headers={"X-GT-Demo-Token": "test-demo-token", "X-GT-Workspace": ws},
+            headers={"X-GT-Demo-Token": os.environ["GT_DEMO_TOKEN"], "X-GT-Workspace": ws},
         ) as r,
     ):
         assert r.headers["content-type"].startswith("text/event-stream")

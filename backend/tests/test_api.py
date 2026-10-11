@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 from pathlib import Path
 
@@ -10,7 +11,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 
-TOKEN = "test-demo-token"
+TOKEN = os.environ["GT_DEMO_TOKEN"]  # set by conftest, or by CI
 H = {"X-GT-Demo-Token": TOKEN}
 ROOT = Path(__file__).resolve().parents[2]
 
