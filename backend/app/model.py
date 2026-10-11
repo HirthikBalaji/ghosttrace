@@ -28,18 +28,50 @@ class Flag(StrEnum):
 
 # Capability-flow edges: u -> v means "control of u yields capability over v".
 TRAVERSAL_EDGE_TYPES: tuple[str, ...] = (
-    "HAS_CREDENTIAL", "AUTHENTICATES_AS", "CAN_ASSUME", "CAN_ACCESS", "CONNECTS_TO", "DEPLOYS_TO",
+    "HAS_CREDENTIAL",
+    "AUTHENTICATES_AS",
+    "CAN_ASSUME",
+    "CAN_ACCESS",
+    "CONNECTS_TO",
+    "DEPLOYS_TO",
 )
 # Organizational / knowledge edges (Company Brain); same bitemporal schema, never traversed for attack paths.
 KNOWLEDGE_EDGE_TYPES: tuple[str, ...] = (
-    "OWNS", "MEMBER_OF", "KNOWS_ABOUT", "DEPENDS_ON", "APPLIES_TO", "HAS_POLICY", "BUILT_BY",
-    "RUNS_ON", "RECORDED_IN", "AFFECTS", "MITIGATES", "RECOMMENDS", "RELATED_TO", "DEPLOYED_FROM",
+    "OWNS",
+    "MEMBER_OF",
+    "KNOWS_ABOUT",
+    "DEPENDS_ON",
+    "APPLIES_TO",
+    "HAS_POLICY",
+    "BUILT_BY",
+    "RUNS_ON",
+    "RECORDED_IN",
+    "AFFECTS",
+    "MITIGATES",
+    "RECOMMENDS",
+    "RELATED_TO",
+    "DEPLOYED_FROM",
 )
 ALL_FACT_EDGE_TYPES = TRAVERSAL_EDGE_TYPES + KNOWLEDGE_EDGE_TYPES
 
 NODE_LABELS: tuple[str, ...] = (
-    "Person", "Team", "Identity", "Credential", "Asset", "Service", "Repository", "Deployment", "BuildRunner",
-    "Host", "Group", "Policy", "Runbook", "Document", "Decision", "SecurityEvent", "Incident",
+    "Person",
+    "Team",
+    "Identity",
+    "Credential",
+    "Asset",
+    "Service",
+    "Repository",
+    "Deployment",
+    "BuildRunner",
+    "Host",
+    "Group",
+    "Policy",
+    "Runbook",
+    "Document",
+    "Decision",
+    "SecurityEvent",
+    "Incident",
 )
 
 
@@ -151,8 +183,17 @@ class SnapEdge:
 
     def export(self) -> dict[str, Any]:
         return {
-            "kind": "edge", "edge_id": self.edge_id, "version": self.version, "type": self.type,
-            "src": self.src, "dst": self.dst, "src_type": self.src_type, "dst_type": self.dst_type,
-            "cls": self.cls, "temporal": self.temporal, "flags": sorted(self.flags),
-            "template_id": self.template_id, "verify_cost": self.verify_cost,
+            "kind": "edge",
+            "edge_id": self.edge_id,
+            "version": self.version,
+            "type": self.type,
+            "src": self.src,
+            "dst": self.dst,
+            "src_type": self.src_type,
+            "dst_type": self.dst_type,
+            "cls": self.cls,
+            "temporal": self.temporal,
+            "flags": sorted(self.flags),
+            "template_id": self.template_id,
+            "verify_cost": self.verify_cost,
         }

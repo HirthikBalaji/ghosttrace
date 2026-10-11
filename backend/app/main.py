@@ -48,16 +48,26 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     log.info("shutdown: draining")
 
 
-app = FastAPI(title="GHOSTTRACE API", version="0.1.0", lifespan=lifespan,
-              description="Open-world containment over a bitemporal FalkorDB graph. SYNTHETIC DEMO: all actions "
-                          "are simulations. Demo-only auth (X-GT-Demo-Token); not production authentication.")
+app = FastAPI(
+    title="GHOSTTRACE API",
+    version="0.1.0",
+    lifespan=lifespan,
+    description="Open-world containment over a bitemporal FalkorDB graph. SYNTHETIC DEMO: all actions "
+    "are simulations. Demo-only auth (X-GT-Demo-Token); not production authentication.",
+)
 s = get_settings()
-app.add_middleware(CORSMiddleware, allow_origins=[o.strip() for o in s.cors_origins.split(",") if o.strip()],
-                   allow_methods=["GET", "POST"], allow_headers=["X-GT-Demo-Token", "X-GT-Workspace", "X-GT-User",
-                                                                  "Content-Type"], allow_credentials=False)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in s.cors_origins.split(",") if o.strip()],
+    allow_methods=["GET", "POST"],
+    allow_headers=["X-GT-Demo-Token", "X-GT-Workspace", "X-GT-User", "Content-Type"],
+    allow_credentials=False,
+)
 
 SECURITY_HEADERS = {
-    "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer",
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
     "Content-Security-Policy": "default-src 'none'; frame-ancestors 'none'",
     "Cache-Control": "no-store",
 }
@@ -68,8 +78,10 @@ async def context(request: Request, call_next: Callable[[Request], Awaitable[Res
     rid = request.headers.get("X-Request-ID", "")[:64] or uuid.uuid4().hex[:16]
     request_id_var.set(rid)
     if int(request.headers.get("content-length") or 0) > MAX_BODY:
-        return JSONResponse({"error": {"code": "payload_too_large", "message": "request body too large"},
-                             "meta": {"request_id": rid}}, status_code=413)
+        return JSONResponse(
+            {"error": {"code": "payload_too_large", "message": "request body too large"}, "meta": {"request_id": rid}},
+            status_code=413,
+        )
     t0 = time.monotonic()
     resp = await call_next(request)
     ms = round((time.monotonic() - t0) * 1000, 2)
@@ -86,14 +98,19 @@ async def context(request: Request, call_next: Callable[[Request], Awaitable[Res
 
 
 def _err(code: str, message: str, status: int, details: Any = None) -> JSONResponse:
-    return JSONResponse({"error": {"code": code, "message": message, "details": details},
-                         "meta": {"request_id": request_id_var.get()}}, status_code=status)
+    return JSONResponse(
+        {"error": {"code": code, "message": message, "details": details}, "meta": {"request_id": request_id_var.get()}},
+        status_code=status,
+    )
 
 
 @app.exception_handler(HTTPException)
 async def http_exc(_: Request, exc: HTTPException) -> JSONResponse:
-    return _err({401: "unauthorized", 404: "not_found", 422: "invalid_input", 429: "rate_limited"}.get(exc.status_code, "error"),
-                str(exc.detail), exc.status_code)
+    return _err(
+        {401: "unauthorized", 404: "not_found", 422: "invalid_input", 429: "rate_limited"}.get(exc.status_code, "error"),
+        str(exc.detail),
+        exc.status_code,
+    )
 
 
 @app.exception_handler(RequestValidationError)

@@ -20,9 +20,27 @@ from app.model import ALL_FACT_EDGE_TYPES, NODE_LABELS, EdgeVersion, Flow, Sourc
 from app.planner.engine import World
 
 EDGE_FIELDS = (
-    "valid_from", "valid_to", "valid_open_ended", "validity_unknown", "tx_from", "tx_to", "kind", "source_ids",
-    "dispute_source_ids", "valid_to_source_ids", "prior_valid_to", "prior_valid_open_ended", "rule_id",
-    "parent_ids", "template_id", "verify_cost", "stale", "cost_remove", "created_by", "note", "supersedes",
+    "valid_from",
+    "valid_to",
+    "valid_open_ended",
+    "validity_unknown",
+    "tx_from",
+    "tx_to",
+    "kind",
+    "source_ids",
+    "dispute_source_ids",
+    "valid_to_source_ids",
+    "prior_valid_to",
+    "prior_valid_open_ended",
+    "rule_id",
+    "parent_ids",
+    "template_id",
+    "verify_cost",
+    "stale",
+    "cost_remove",
+    "created_by",
+    "note",
+    "supersedes",
 )
 
 
@@ -31,8 +49,11 @@ def now_ms() -> int:
 
 
 def _primitive(v: Any) -> bool:
-    return v is None or isinstance(v, (str, int, float, bool)) or (
-        isinstance(v, list) and all(isinstance(x, (str, int, float, bool)) for x in v))
+    return (
+        v is None
+        or isinstance(v, (str, int, float, bool))
+        or (isinstance(v, list) and all(isinstance(x, (str, int, float, bool)) for x in v))
+    )
 
 
 def _label_of(labels: list[str]) -> str:
@@ -80,16 +101,48 @@ class Repository:
             self.c.rw(self.ws, Q.LINK_CONTRADICTION, {"rows": [{"a": a, "b": b} for a, b in meta.contradictions]})
         n_edges = self.write_versions(led.all_versions())
         inc = meta.incident
-        self.c.rw(self.ws, Q.UPSERT_NODE["Incident"], {"rows": [{"id": inc["incident_id"], "props": {
-            "workspace_id": self.ws, "name": inc["title"], "severity": inc["severity"], "synthetic": True,
-            "text": inc.get("summary", ""), "current": True}}]})
-        self.c.rw(self.ws, Q.UPSERT_INCIDENT_EVIDENCE,
-                  {"rows": [{"sid": s, "iid": inc["incident_id"]} for s in meta.incident_evidence]})
-        self.c.rw(self.ws, Q.UPSERT_META, {"ws": self.ws, "sid": meta.scenario_id, "payload": json.dumps({
-            "scenario_id": meta.scenario_id, "title": meta.title, "description": meta.description,
-            "incident": inc, "now": meta.now, "flows": [f.to_dict() | {"description": f.description} for f in meta.flows],
-            "nominations": meta.nominations, "ingestion_log": led.log[-400:],
-        })})
+        self.c.rw(
+            self.ws,
+            Q.UPSERT_NODE["Incident"],
+            {
+                "rows": [
+                    {
+                        "id": inc["incident_id"],
+                        "props": {
+                            "workspace_id": self.ws,
+                            "name": inc["title"],
+                            "severity": inc["severity"],
+                            "synthetic": True,
+                            "text": inc.get("summary", ""),
+                            "current": True,
+                        },
+                    }
+                ]
+            },
+        )
+        self.c.rw(
+            self.ws, Q.UPSERT_INCIDENT_EVIDENCE, {"rows": [{"sid": s, "iid": inc["incident_id"]} for s in meta.incident_evidence]}
+        )
+        self.c.rw(
+            self.ws,
+            Q.UPSERT_META,
+            {
+                "ws": self.ws,
+                "sid": meta.scenario_id,
+                "payload": json.dumps(
+                    {
+                        "scenario_id": meta.scenario_id,
+                        "title": meta.title,
+                        "description": meta.description,
+                        "incident": inc,
+                        "now": meta.now,
+                        "flows": [f.to_dict() | {"description": f.description} for f in meta.flows],
+                        "nominations": meta.nominations,
+                        "ingestion_log": led.log[-400:],
+                    }
+                ),
+            },
+        )
         return {"nodes": len(led.nodes), "sources": len(led.sources), "edge_versions": n_edges}
 
     def write_versions(self, versions: Iterable[EdgeVersion]) -> int:
@@ -102,11 +155,12 @@ class Repository:
             props["workspace_id"] = self.ws
             props["schema_version"] = 1
             by_type.setdefault(v.type, []).append(
-                {"src": v.src, "dst": v.dst, "edge_id": v.edge_id, "version": v.version, "props": props})
+                {"src": v.src, "dst": v.dst, "edge_id": v.edge_id, "version": v.version, "props": props}
+            )
             n += 1
         for t, rows in by_type.items():
             for i in range(0, len(rows), 500):
-                self.c.rw(self.ws, Q.UPSERT_EDGE_VERSION[t], {"rows": rows[i:i + 500]})
+                self.c.rw(self.ws, Q.UPSERT_EDGE_VERSION[t], {"rows": rows[i : i + 500]})
         return n
 
     # ------------------------------------------------------------------ world loading
@@ -119,17 +173,28 @@ class Repository:
 
     def _version_from_row(self, row: list[Any]) -> EdgeVersion:
         t, a, b, la, lb, p = row[:6]
-        return EdgeVersion(edge_id=p["edge_id"], version=int(p["version"]), type=t, src=a, dst=b,
-                           src_type=_label_of(la), dst_type=_label_of(lb), workspace_id=self.ws,
-                           **{k: p.get(k) for k in EDGE_FIELDS if k in p and k != "workspace_id"}
-                           | {k: p.get(k) or [] for k in ("source_ids", "dispute_source_ids", "valid_to_source_ids",
-                                                         "parent_ids")}
-                           | {"valid_open_ended": bool(p.get("valid_open_ended")),
-                              "validity_unknown": bool(p.get("validity_unknown")),
-                              "prior_valid_open_ended": bool(p.get("prior_valid_open_ended")),
-                              "stale": bool(p.get("stale")), "verify_cost": int(p.get("verify_cost") or 1),
-                              "kind": p.get("kind") or "asserted", "created_by": p.get("created_by") or "",
-                              "note": p.get("note") or ""})
+        return EdgeVersion(
+            edge_id=p["edge_id"],
+            version=int(p["version"]),
+            type=t,
+            src=a,
+            dst=b,
+            src_type=_label_of(la),
+            dst_type=_label_of(lb),
+            workspace_id=self.ws,
+            **{k: p.get(k) for k in EDGE_FIELDS if k in p and k != "workspace_id"}
+            | {k: p.get(k) or [] for k in ("source_ids", "dispute_source_ids", "valid_to_source_ids", "parent_ids")}
+            | {
+                "valid_open_ended": bool(p.get("valid_open_ended")),
+                "validity_unknown": bool(p.get("validity_unknown")),
+                "prior_valid_open_ended": bool(p.get("prior_valid_open_ended")),
+                "stale": bool(p.get("stale")),
+                "verify_cost": int(p.get("verify_cost") or 1),
+                "kind": p.get("kind") or "asserted",
+                "created_by": p.get("created_by") or "",
+                "note": p.get("note") or "",
+            },
+        )
 
     def all_versions(self) -> list[EdgeVersion]:
         rows = self.c.ro(self.ws, Q.ALL_EDGE_VERSIONS, {"ws": self.ws, "types": list(ALL_FACT_EDGE_TYPES)})
@@ -137,13 +202,11 @@ class Repository:
 
     def active_versions(self, T: int, tau: int) -> list[tuple[EdgeVersion, str]]:
         """Versions satisfying the shared bitemporal predicate, evaluated inside FalkorDB."""
-        rows = self.c.ro(self.ws, Q.ACTIVE_EDGE_VERSIONS,
-                         {"ws": self.ws, "types": list(ALL_FACT_EDGE_TYPES), "T": T, "tau": tau})
+        rows = self.c.ro(self.ws, Q.ACTIVE_EDGE_VERSIONS, {"ws": self.ws, "types": list(ALL_FACT_EDGE_TYPES), "T": T, "tau": tau})
         return [(self._version_from_row(r), r[6]) for r in rows]
 
     def visible_versions(self, tau: int) -> list[EdgeVersion]:
-        rows = self.c.ro(self.ws, Q.VISIBLE_EDGE_VERSIONS, {"ws": self.ws, "types": list(ALL_FACT_EDGE_TYPES),
-                                                            "tau": tau})
+        rows = self.c.ro(self.ws, Q.VISIBLE_EDGE_VERSIONS, {"ws": self.ws, "types": list(ALL_FACT_EDGE_TYPES), "tau": tau})
         return [self._version_from_row(r) for r in rows]
 
     def sources(self) -> dict[str, SourceRecord]:
@@ -167,22 +230,38 @@ class Repository:
         m = self.meta()
         inc = m["incident"]
         versions = self.visible_versions(tau) if tau is not None else self.all_versions()
-        return World(workspace_id=self.ws, versions=versions, sources=self.sources(), node_props=self.nodes(),
-                     flows=[Flow(f["flow_id"], f["u"], f["v"], int(f["weight"]), f["kind"], f.get("description", ""))
-                            for f in m["flows"]],
-                     attack_sources=list(inc["compromised_set"]), targets=list(inc["targets"]),
-                     meta={"scenario_id": m["scenario_id"], "now": m["now"]})
+        return World(
+            workspace_id=self.ws,
+            versions=versions,
+            sources=self.sources(),
+            node_props=self.nodes(),
+            flows=[Flow(f["flow_id"], f["u"], f["v"], int(f["weight"]), f["kind"], f.get("description", "")) for f in m["flows"]],
+            attack_sources=list(inc["compromised_set"]),
+            targets=list(inc["targets"]),
+            meta={"scenario_id": m["scenario_id"], "now": m["now"]},
+        )
 
     def fact_history(self, edge_id: str) -> list[dict[str, Any]]:
         rows = self.c.ro(self.ws, Q.FACT_HISTORY, {"ws": self.ws, "edge_id": edge_id})
         return [{"type": t, "src": a, "dst": b, **p} for t, a, b, p in rows]
 
-    def find_paths_cypher(self, sources: list[str], targets: list[str], allowed: list[str], T: int, tau: int,
-                          max_depth: int, limit: int) -> list[tuple[list[str], list[str]]]:
+    def find_paths_cypher(
+        self, sources: list[str], targets: list[str], allowed: list[str], T: int, tau: int, max_depth: int, limit: int
+    ) -> list[tuple[list[str], list[str]]]:
         depth = max(1, min(int(max_depth), Q.MAX_CYPHER_DEPTH))
-        rows = self.c.ro(self.ws, Q.FIND_PATHS[depth], {"ws": self.ws, "sources": sources, "targets": targets,
-                                                         "allowed": allowed, "T": T, "tau": tau,
-                                                         "limit": max(1, min(int(limit), 2000))})
+        rows = self.c.ro(
+            self.ws,
+            Q.FIND_PATHS[depth],
+            {
+                "ws": self.ws,
+                "sources": sources,
+                "targets": targets,
+                "allowed": allowed,
+                "T": T,
+                "tau": tau,
+                "limit": max(1, min(int(limit), 2000)),
+            },
+        )
         return [(list(e), list(n)) for e, n in rows]
 
     # ------------------------------------------------------------------ generic read helpers
@@ -195,8 +274,13 @@ class Repository:
 
     # ------------------------------------------------------------------ artifacts & audit
     def save_artifact(self, label: str, inv: str, art_id: str, payload: dict[str, Any], **props: Any) -> str:
-        p = {"id": art_id, "workspace_id": self.ws, "investigation_id": inv, "created_at": now_ms(),
-             "payload": json.dumps(payload, sort_keys=True)} | {k: v for k, v in props.items() if _primitive(v)}
+        p = {
+            "id": art_id,
+            "workspace_id": self.ws,
+            "investigation_id": inv,
+            "created_at": now_ms(),
+            "payload": json.dumps(payload, sort_keys=True),
+        } | {k: v for k, v in props.items() if _primitive(v)}
         self.rw(Q.UPSERT_ARTIFACT[label], {"id": art_id, "inv": inv, "props": p})
         return art_id
 
@@ -217,8 +301,17 @@ class Repository:
         return out
 
     def audit(self, inv: str, actor: str, action: str, detail: dict[str, Any]) -> None:
-        self.rw(Q.AUDIT, {"id": f"aud_{uuid.uuid4().hex[:12]}", "inv": inv, "at": now_ms(), "actor": actor,
-                          "action": action, "detail": json.dumps(detail, sort_keys=True, default=str)[:20000]})
+        self.rw(
+            Q.AUDIT,
+            {
+                "id": f"aud_{uuid.uuid4().hex[:12]}",
+                "inv": inv,
+                "at": now_ms(),
+                "actor": actor,
+                "action": action,
+                "detail": json.dumps(detail, sort_keys=True, default=str)[:20000],
+            },
+        )
 
     def get_audit(self, inv: str) -> list[dict[str, Any]]:
         out = []

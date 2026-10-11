@@ -43,8 +43,9 @@ def classify_path(edges: Sequence[SnapEdge]) -> PathInfo:
     return PathInfo(tuple(e.edge_id for e in edges), nodes, cls, len(latent), len(uncertain), assumptions)
 
 
-def _adj(edges: Iterable[SnapEdge], removed: frozenset[str] | set[str],
-         confirmed_only: bool = False) -> dict[str, list[SnapEdge]]:
+def _adj(
+    edges: Iterable[SnapEdge], removed: frozenset[str] | set[str], confirmed_only: bool = False
+) -> dict[str, list[SnapEdge]]:
     adj: dict[str, list[SnapEdge]] = {}
     for e in edges:
         if e.type not in TRAVERSAL_EDGE_TYPES or e.edge_id in removed:
@@ -57,8 +58,9 @@ def _adj(edges: Iterable[SnapEdge], removed: frozenset[str] | set[str],
     return adj
 
 
-def reopening_distance(edges: Iterable[SnapEdge], removed: frozenset[str] | set[str], sources: Iterable[str],
-                       targets: Iterable[str]) -> tuple[float, list[SnapEdge]]:
+def reopening_distance(
+    edges: Iterable[SnapEdge], removed: frozenset[str] | set[str], sources: Iterable[str], targets: Iterable[str]
+) -> tuple[float, list[SnapEdge]]:
     """0-1 BFS (weight 0 confirmed, 1 latent/uncertain). Returns (d, witness path edges)."""
     adj = _adj(edges, removed)
     srcs = sorted(set(sources))
@@ -88,8 +90,7 @@ def reopening_distance(edges: Iterable[SnapEdge], removed: frozenset[str] | set[
     return dist[best_t], path
 
 
-def reachable(edges: Iterable[SnapEdge], removed: frozenset[str] | set[str], u: str, v: str,
-              confirmed_only: bool = True) -> bool:
+def reachable(edges: Iterable[SnapEdge], removed: frozenset[str] | set[str], u: str, v: str, confirmed_only: bool = True) -> bool:
     adj = _adj(edges, removed, confirmed_only)
     seen, stack = {u}, [u]
     while stack:
@@ -132,8 +133,14 @@ def backward_set(edges: Iterable[SnapEdge], removed: frozenset[str] | set[str], 
     return seen
 
 
-def enumerate_paths(edges: Iterable[SnapEdge], removed: frozenset[str] | set[str], sources: Iterable[str],
-                    targets: Iterable[str], max_depth: int, max_paths: int) -> list[PathInfo]:
+def enumerate_paths(
+    edges: Iterable[SnapEdge],
+    removed: frozenset[str] | set[str],
+    sources: Iterable[str],
+    targets: Iterable[str],
+    max_depth: int,
+    max_paths: int,
+) -> list[PathInfo]:
     """Bounded DFS over simple paths (reference for Cypher enumeration; not used for soundness)."""
     adj = _adj(edges, removed)
     tgts = set(targets)

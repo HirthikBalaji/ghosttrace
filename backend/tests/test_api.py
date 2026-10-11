@@ -41,6 +41,7 @@ def test_auth_fails_closed(client, monkeypatch):
     assert client.get("/api/v1/scenarios").status_code == 401
     assert client.get("/api/v1/scenarios", headers={"X-GT-Demo-Token": "wrong"}).status_code == 401
     from app.config import get_settings
+
     monkeypatch.setattr(get_settings(), "demo_token", None)
     r = client.get("/api/v1/scenarios", headers=H)
     assert r.status_code == 401 and "failing closed" in r.json()["error"]["message"]
@@ -51,8 +52,11 @@ def test_security_headers_and_errors(client):
     assert r.headers["X-Content-Type-Options"] == "nosniff" and "frame-ancestors" in r.headers["Content-Security-Policy"]
     r = client.get("/api/v1/scenarios", headers=H | {"X-GT-Workspace": "../../etc"})
     assert r.status_code == 400
-    r = client.post("/api/v1/investigations", headers=H, content=b"x" * (300 * 1024),
-                    )
+    r = client.post(
+        "/api/v1/investigations",
+        headers=H,
+        content=b"x" * (300 * 1024),
+    )
     assert r.status_code == 413
 
 
@@ -75,18 +79,21 @@ def test_end_to_end_demo_flow(client, falkor, ws):
     assert r["data"]["investigation"]["status"] == "completed"
     g = client.get(f"/api/v1/investigations/{inv}/graph", headers=h).json()["data"]
     assert g["edges"] and all(e["cls"] in ("OBSERVED", "DERIVED", "LATENT") for e in g["edges"])
-    g_then = client.get(f"/api/v1/investigations/{inv}/graph", headers=h,
-                        params={"T": "2026-03-02T09:00:00Z", "tau": "2026-03-02T09:00:00Z"}).json()["data"]
+    g_then = client.get(
+        f"/api/v1/investigations/{inv}/graph", headers=h, params={"T": "2026-03-02T09:00:00Z", "tau": "2026-03-02T09:00:00Z"}
+    ).json()["data"]
     assert len(g_then["edges"]) < len(g["edges"])  # history changes with (T, tau)
     c = client.get(f"/api/v1/investigations/{inv}/containment", headers=h).json()["data"]
     cid = next(x["certificate_id"] for x in c["certificates"] if x["status"] == "contained")
     v = client.post(f"/api/v1/investigations/{inv}/certificate/{cid}/verify", headers=h).json()["data"]
     assert v["accepted"] and v["exit_code"] == 0 and "ACCEPTED" in v["output"]
-    sim = client.post(f"/api/v1/investigations/{inv}/containment/simulate", headers=h,
-                      json={"action_ids": ["disable_identity:id:dev-alice"]}).json()["data"]["certificate"]
+    sim = client.post(
+        f"/api/v1/investigations/{inv}/containment/simulate", headers=h, json={"action_ids": ["disable_identity:id:dev-alice"]}
+    ).json()["data"]["certificate"]
     assert sim["status"] == "not_contained" and sim["mode"] == "simulated"
-    bad = client.post(f"/api/v1/investigations/{inv}/containment/simulate", headers=h,
-                      json={"action_ids": ["MATCH (n) DELETE n"]})
+    bad = client.post(
+        f"/api/v1/investigations/{inv}/containment/simulate", headers=h, json={"action_ids": ["MATCH (n) DELETE n"]}
+    )
     assert bad.status_code == 422
     sens = client.get(f"/api/v1/investigations/{inv}/evidence-sensitivity", headers=h).json()["data"]
     assert any(s["differs"] for s in sens)
@@ -94,12 +101,18 @@ def test_end_to_end_demo_flow(client, falkor, ws):
     assert lb and lb[0]["load_bearing"]
     md = client.get(f"/api/v1/investigations/{inv}/report", headers=h, params={"format": "md"})
     assert md.status_code == 200 and "SYNTHETIC" in md.text
-    o = client.get("/api/v1/company/owners", headers=h, params={"service_id": "svc:payments-api",
-                                                              "asof_T": "2026-03-02T09:00:00Z",
-                                                              "known_tau": "2026-03-02T09:00:00Z"}).json()["data"]
+    o = client.get(
+        "/api/v1/company/owners",
+        headers=h,
+        params={"service_id": "svc:payments-api", "asof_T": "2026-03-02T09:00:00Z", "known_tau": "2026-03-02T09:00:00Z"},
+    ).json()["data"]
     assert o["primary"][0]["team_id"] == "team:payments" and o["source_ids"]
-    assert client.get("/api/v1/company/owners", headers=h, params={"service_id": "svc:payments-api",
-                                                                 "asof_T": "2026-03-02T09:00:00"}).status_code == 422
+    assert (
+        client.get(
+            "/api/v1/company/owners", headers=h, params={"service_id": "svc:payments-api", "asof_T": "2026-03-02T09:00:00"}
+        ).status_code
+        == 422
+    )
     assert client.get(f"/api/v1/audit/{inv}", headers=h).json()["data"]
     assert client.get("/api/v1/memory", headers=h).json()["data"]
 

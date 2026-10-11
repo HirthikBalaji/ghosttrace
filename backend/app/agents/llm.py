@@ -47,8 +47,9 @@ SYSTEM_PROMPT = (
 class Provider:
     name = "base"
 
-    def complete(self, task: str, structured: dict[str, Any], untrusted: list[str], schema: type[BaseModel],
-                 max_tokens: int = 800) -> tuple[BaseModel, Usage]:
+    def complete(
+        self, task: str, structured: dict[str, Any], untrusted: list[str], schema: type[BaseModel], max_tokens: int = 800
+    ) -> tuple[BaseModel, Usage]:
         raise NotImplementedError
 
 
@@ -57,8 +58,9 @@ class MockProvider(Provider):
 
     name = "mock"
 
-    def complete(self, task: str, structured: dict[str, Any], untrusted: list[str], schema: type[BaseModel],
-                 max_tokens: int = 800) -> tuple[BaseModel, Usage]:
+    def complete(
+        self, task: str, structured: dict[str, Any], untrusted: list[str], schema: type[BaseModel], max_tokens: int = 800
+    ) -> tuple[BaseModel, Usage]:
         fn = getattr(self, f"_{task}", None)
         if fn is None:
             raise LLMError(f"mock provider has no template for task {task}")
@@ -75,8 +77,7 @@ class MockProvider(Provider):
         conf = [h for h in hs if h.get("path_class") == "CONFIRMED"]
         parts = [f"Evaluated {s.get('path_count', 0)} time-valid paths at T={s.get('T')} as known at tau={s.get('tau')}."]
         if conf:
-            parts.append(f"{len(conf)} hypothesis/es rest on fully confirmed paths: "
-                         + "; ".join(h["title"] for h in conf) + ".")
+            parts.append(f"{len(conf)} hypothesis/es rest on fully confirmed paths: " + "; ".join(h["title"] for h in conf) + ".")
         cond = [h for h in hs if (h.get("path_class") or "").startswith("CONDITIONAL")]
         if cond:
             parts.append(f"{len(cond)} depend on unverified (latent) edges and are conditional.")
@@ -93,14 +94,24 @@ class MockProvider(Provider):
                 txt.append(f"k={p['k']}: cost {p['total_cost']} with {len(p['actions'])} action(s)")
             else:
                 txt.append(f"k={p['k']}: infeasible ({p.get('infeasible_reason')})")
-        return {"summary": "Price of Certainty — " + "; ".join(txt) + ". All actions are simulations.",
-                "cited_ids": [a for p in pts for a in p["actions"]]}
+        return {
+            "summary": "Price of Certainty — " + "; ".join(txt) + ". All actions are simulations.",
+            "cited_ids": [a for p in pts for a in p["actions"]],
+        }
 
     @staticmethod
     def _red_team_nominations(s: dict[str, Any]) -> dict[str, Any]:
-        return {"nominations": [{"template_id": c["template_id"], "src": c["src"], "dst": c["dst"],
-                                 "rationale": f"type signature fits {c['template_id']}"}
-                                for c in s.get("candidates", [])[: s.get("limit", 10)]]}
+        return {
+            "nominations": [
+                {
+                    "template_id": c["template_id"],
+                    "src": c["src"],
+                    "dst": c["dst"],
+                    "rationale": f"type signature fits {c['template_id']}",
+                }
+                for c in s.get("candidates", [])[: s.get("limit", 10)]
+            ]
+        }
 
     @staticmethod
     def _llm_only_recommendation(s: dict[str, Any]) -> dict[str, Any]:
@@ -125,17 +136,26 @@ class OpenAICompatibleProvider(Provider):
             raise LLMError("openai_compatible provider requires GT_LLM_ENDPOINT, GT_LLM_MODEL, GT_LLM_API_KEY")
         self.endpoint, self.model, self.key = s.llm_endpoint, s.llm_model, s.llm_api_key
 
-    def complete(self, task: str, structured: dict[str, Any], untrusted: list[str], schema: type[BaseModel],
-                 max_tokens: int = 800) -> tuple[BaseModel, Usage]:
-        user = (f"TASK: {task}\nSCHEMA: {json.dumps(schema.model_json_schema())}\n"
-                f"STRUCTURED_INPUT (trusted, from graph queries): {json.dumps(structured, default=str)[:12000]}\n"
-                + "\n".join(untrusted))
+    def complete(
+        self, task: str, structured: dict[str, Any], untrusted: list[str], schema: type[BaseModel], max_tokens: int = 800
+    ) -> tuple[BaseModel, Usage]:
+        user = (
+            f"TASK: {task}\nSCHEMA: {json.dumps(schema.model_json_schema())}\n"
+            f"STRUCTURED_INPUT (trusted, from graph queries): {json.dumps(structured, default=str)[:12000]}\n"
+            + "\n".join(untrusted)
+        )
         try:
-            r = httpx.post(f"{self.endpoint.rstrip('/')}/chat/completions", timeout=30,
-                           headers={"Authorization": f"Bearer {self.key}"},
-                           json={"model": self.model, "max_tokens": max_tokens, "response_format": {"type": "json_object"},
-                                 "messages": [{"role": "system", "content": SYSTEM_PROMPT},
-                                              {"role": "user", "content": user}]})
+            r = httpx.post(
+                f"{self.endpoint.rstrip('/')}/chat/completions",
+                timeout=30,
+                headers={"Authorization": f"Bearer {self.key}"},
+                json={
+                    "model": self.model,
+                    "max_tokens": max_tokens,
+                    "response_format": {"type": "json_object"},
+                    "messages": [{"role": "system", "content": SYSTEM_PROMPT}, {"role": "user", "content": user}],
+                },
+            )
             r.raise_for_status()
             body = r.json()
             content = body["choices"][0]["message"]["content"]

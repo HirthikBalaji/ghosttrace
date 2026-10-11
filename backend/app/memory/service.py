@@ -22,8 +22,10 @@ from app.reasoning.evidence import independent_root_count
 from app.security.injection import contains_instructions
 
 CATEGORIES = ("episodic", "semantic", "procedural")
-SECRET_RX = re.compile(r"(AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|"
-                       r"xox[baprs]-[A-Za-z0-9-]{10,}|(?i:password\s*[:=]\s*\S+))")
+SECRET_RX = re.compile(
+    r"(AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY-----|ghp_[A-Za-z0-9]{20,}|"
+    r"xox[baprs]-[A-Za-z0-9-]{10,}|(?i:password\s*[:=]\s*\S+))"
+)
 MAX_CONTENT = 2000
 DEFAULT_FRESHNESS_DAYS = {"episodic": 365, "semantic": 90, "procedural": 180}
 
@@ -93,12 +95,21 @@ class MemoryService:
         mid = d.memory_id or _mid(d)
         created = d.created_at or now_ms()
         props = {
-            "memory_id": mid, "workspace_id": self.repo.ws, "category": d.category, "content": d.content,
-            "source_ids": sorted(d.source_ids), "entity_ids": sorted(d.entity_ids),
-            "investigation_id": d.investigation_id or "", "scope": "investigation" if d.investigation_id else "workspace",
-            "created_at": created, "freshness_days": DEFAULT_FRESHNESS_DAYS.get(d.category, 90),
+            "memory_id": mid,
+            "workspace_id": self.repo.ws,
+            "category": d.category,
+            "content": d.content,
+            "source_ids": sorted(d.source_ids),
+            "entity_ids": sorted(d.entity_ids),
+            "investigation_id": d.investigation_id or "",
+            "scope": "investigation" if d.investigation_id else "workspace",
+            "created_at": created,
+            "freshness_days": DEFAULT_FRESHNESS_DAYS.get(d.category, 90),
             "expires_at": created + DEFAULT_FRESHNESS_DAYS.get(d.category, 90) * 86_400_000,
-            "taint": taint, "taint_reasons": reasons, "status": status, "created_by": d.created_by,
+            "taint": taint,
+            "taint_reasons": reasons,
+            "status": status,
+            "created_by": d.created_by,
             "disputed": d.disputed,
         }
         self.repo.rw(Q.UPSERT_MEMORY, {"id": mid, "props": props, "source_ids": [s for s in d.source_ids if s in sources]})
@@ -123,17 +134,17 @@ class MemoryService:
         return props
 
     def quarantine(self, memory_id: str, reason: str) -> None:
-        self.repo.rw(Q.UPDATE_MEMORY, {"id": memory_id, "props": {"status": "quarantined",
-                                                                   "quarantine_reason": reason}})
+        self.repo.rw(Q.UPDATE_MEMORY, {"id": memory_id, "props": {"status": "quarantined", "quarantine_reason": reason}})
 
-    def list(self, limit: int = 200) -> list[dict[str, Any]]:
+    def entries(self, limit: int = 200) -> list[dict[str, Any]]:
         return [dict(p) for (p,) in self.repo.ro(Q.LIST_MEMORY, {"limit": max(1, min(limit, 500))})]
 
     def relevant(self, entity_ids: list[str], source_ids: list[str], now: int, limit: int = 20) -> list[dict[str, Any]]:
         """Graph-relevance retrieval: provenance or entity overlap with the active investigation."""
         out = []
-        for p, ent, src in self.repo.ro(Q.RELEVANT_MEMORY, {"entity_ids": entity_ids, "source_ids": source_ids,
-                                                             "limit": max(1, min(limit, 100))}):
+        for p, ent, src in self.repo.ro(
+            Q.RELEVANT_MEMORY, {"entity_ids": entity_ids, "source_ids": source_ids, "limit": max(1, min(limit, 100))}
+        ):
             m = dict(p)
             m["relevance"] = {"entity_overlap": ent, "source_overlap": src}
             m["stale"] = bool(m.get("expires_at") and m["expires_at"] < now)

@@ -92,8 +92,7 @@ def test_backfill_as_known_before_ingestion_returns_old_world(world_a):
 
 def test_supersession_preserves_history():
     led = _ledger()
-    led.assert_edge(fact_id="o", type="OWNS", src="t1", dst="s", at=1000, source_ids=["sig"], valid_from=0,
-                    valid_open_ended=True)
+    led.assert_edge(fact_id="o", type="OWNS", src="t1", dst="s", at=1000, source_ids=["sig"], valid_from=0, valid_open_ended=True)
     led.correct_edge(fact_id="o", at=5000, source_ids=["sig2"], valid_to=3000)
     vs = led.versions["o"]
     assert [v.version for v in vs] == [1, 2]
@@ -117,24 +116,27 @@ def test_ingestion_validation():
     with pytest.raises(IngestionError):
         led.assert_edge(fact_id="x", type="CAN_ACCESS", src="a", dst="b", at=1, source_ids=["missing"])
     with pytest.raises(IngestionError):
-        led.assert_edge(fact_id="x", type="CAN_ACCESS", src="a", dst="b", at=1, source_ids=["sig"], valid_from=5,
-                        valid_to=5)
+        led.assert_edge(fact_id="x", type="CAN_ACCESS", src="a", dst="b", at=1, source_ids=["sig"], valid_from=5, valid_to=5)
     with pytest.raises(ValueError):
-        led.assert_edge(fact_id="x", type="CAN_ACCESS", src="a", dst="b", at="2026-01-01T00:00:00",
-                        source_ids=["sig"])
+        led.assert_edge(fact_id="x", type="CAN_ACCESS", src="a", dst="b", at="2026-01-01T00:00:00", source_ids=["sig"])
 
 
-@given(vf=st.one_of(st.none(), st.integers(0, 1000)), vt=st.one_of(st.none(), st.integers(0, 1000)),
-       T=st.integers(0, 1000), txf=st.integers(0, 100), txt=st.one_of(st.none(), st.integers(0, 200)),
-       tau=st.integers(0, 200), open_=st.booleans())
+@given(
+    vf=st.one_of(st.none(), st.integers(0, 1000)),
+    vt=st.one_of(st.none(), st.integers(0, 1000)),
+    T=st.integers(0, 1000),
+    txf=st.integers(0, 100),
+    txt=st.one_of(st.none(), st.integers(0, 200)),
+    tau=st.integers(0, 200),
+    open_=st.booleans(),
+)
 def test_bitemporal_visibility_invariants(vf, vt, T, txf, txt, tau, open_):
-    fact = {"tx_from": txf, "tx_to": txt, "valid_from": vf, "valid_to": vt,
-            "validity_unknown": validity_unknown(vf, vt, open_)}
+    fact = {"tx_from": txf, "tx_to": txt, "valid_from": vf, "valid_to": vt, "validity_unknown": validity_unknown(vf, vt, open_)}
     s = temporal_status(fact, T, tau)
     visible = txf <= tau and (txt is None or tau < txt)
     assert (s != TemporalStatus.INVISIBLE) == visible
     if s == TemporalStatus.ACTIVE:
-        assert vf is not None and vf <= T and (vt is None or T < vt)
+        assert vf is not None and vf <= T and (vt is None or vt > T)
         assert vt is not None or open_
     if s == TemporalStatus.UNCERTAIN:
         assert fact["validity_unknown"]

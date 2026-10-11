@@ -20,7 +20,9 @@ def _apply_falsification(v: EdgeVersion, falsified: frozenset[str]) -> EdgeVersi
     if v.valid_to_source_ids and set(v.valid_to_source_ids) <= falsified:
         vt, open_ = v.prior_valid_to, v.prior_valid_open_ended
         return dataclasses.replace(
-            v, valid_to=vt, valid_open_ended=open_,
+            v,
+            valid_to=vt,
+            valid_open_ended=open_,
             validity_unknown=validity_unknown(v.valid_from, vt, open_),
         )
     return v
@@ -65,9 +67,20 @@ def build_snapshot(
         if v.stale:
             flags.append(Flag.STALE.value)
         out[v.edge_id] = SnapEdge(
-            edge_id=v.edge_id, version=v.version, type=v.type, src=v.src, dst=v.dst, src_type=v.src_type,
-            dst_type=v.dst_type, cls=cls.value, temporal=st.value, flags=flags, template_id=v.template_id,
-            verify_cost=v.verify_cost, source_ids=support, dispute_source_ids=list(v.dispute_source_ids),
+            edge_id=v.edge_id,
+            version=v.version,
+            type=v.type,
+            src=v.src,
+            dst=v.dst,
+            src_type=v.src_type,
+            dst_type=v.dst_type,
+            cls=cls.value,
+            temporal=st.value,
+            flags=flags,
+            template_id=v.template_id,
+            verify_cost=v.verify_cost,
+            source_ids=support,
+            dispute_source_ids=list(v.dispute_source_ids),
             cost_remove=v.cost_remove,
         )
 
@@ -82,10 +95,20 @@ def build_snapshot(
             flags.append(Flag.DISPUTED.value)
         support = sorted({s for p in parents if p is not None for s in p.source_ids})
         out[v.edge_id] = SnapEdge(
-            edge_id=v.edge_id, version=v.version, type=v.type, src=v.src, dst=v.dst, src_type=v.src_type,
-            dst_type=v.dst_type, cls=(EpistemicClass.LATENT if weak else EpistemicClass.DERIVED).value,
-            temporal=st.value, flags=flags, template_id=v.template_id or ("derived_weak" if weak else None),
-            verify_cost=v.verify_cost, source_ids=support, cost_remove=v.cost_remove,
+            edge_id=v.edge_id,
+            version=v.version,
+            type=v.type,
+            src=v.src,
+            dst=v.dst,
+            src_type=v.src_type,
+            dst_type=v.dst_type,
+            cls=(EpistemicClass.LATENT if weak else EpistemicClass.DERIVED).value,
+            temporal=st.value,
+            flags=flags,
+            template_id=v.template_id or ("derived_weak" if weak else None),
+            verify_cost=v.verify_cost,
+            source_ids=support,
+            cost_remove=v.cost_remove,
         )
     return out
 

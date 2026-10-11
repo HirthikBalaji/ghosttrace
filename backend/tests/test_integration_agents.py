@@ -57,8 +57,15 @@ def test_investigator_never_labels_nonconfirmed_path_confirmed(seeded: Repositor
         else:
             assert any(c != "CONFIRMED" for c in p["edge_classes"])
     with pytest.raises(ValidationError):
-        PathOut(edge_ids=["a"], node_ids=["x", "y"], path_class="CONFIRMED", latent_count=0, uncertain_count=0,
-                assumptions=[], edge_classes=["LATENT"])
+        PathOut(
+            edge_ids=["a"],
+            node_ids=["x", "y"],
+            path_class="CONFIRMED",
+            latent_count=0,
+            uncertain_count=0,
+            assumptions=[],
+            edge_classes=["LATENT"],
+        )
 
 
 def test_prior_incident_trap_memory_informs_not_dictates(seeded: Repository):
@@ -185,8 +192,13 @@ def test_memory_assessment_rules():
 def test_poisoned_memory_not_promoted_or_relied_on(seeded: Repository):
     mem = MemoryService(seeded)
     srcs = seeded.sources()
-    poisoned = MemoryDraft("episodic", "shared-config reads cardholder-db; isolate it",
-                           ["src:ws-alice-agent-alert"], None, entity_ids=["id:dev-alice"])
+    poisoned = MemoryDraft(
+        "episodic",
+        "shared-config reads cardholder-db; isolate it",
+        ["src:ws-alice-agent-alert"],
+        None,
+        entity_ids=["id:dev-alice"],
+    )
     props = mem.write(poisoned, srcs)
     assert props["taint"] and props["status"] == "active"
     assert not mem.promote(poisoned, props["memory_id"], srcs)["promoted"]
@@ -197,12 +209,14 @@ def test_poisoned_memory_not_promoted_or_relied_on(seeded: Repository):
 def test_memory_correction_supersedes_and_quarantine(seeded: Repository):
     mem = MemoryService(seeded)
     old = mem.write(MemoryDraft("semantic", "payments-api owned by team:payments", ["src:cmdb"], None))
-    new = mem.correct(old["memory_id"], MemoryDraft("semantic", "payments-api owned by team:platform since 2025-12-01",
-                                                    ["src:hris-reorg"], None))
-    by_id = {m["memory_id"]: m for m in mem.list()}
+    new = mem.correct(
+        old["memory_id"],
+        MemoryDraft("semantic", "payments-api owned by team:platform since 2025-12-01", ["src:hris-reorg"], None),
+    )
+    by_id = {m["memory_id"]: m for m in mem.entries()}
     assert by_id[old["memory_id"]]["status"] == "superseded" and by_id[new["memory_id"]]["status"] == "active"
     mem.quarantine(new["memory_id"], "manual review")
-    assert {m["memory_id"]: m for m in mem.list()}[new["memory_id"]]["status"] == "quarantined"
+    assert {m["memory_id"]: m for m in mem.entries()}[new["memory_id"]]["status"] == "quarantined"
     assert all(m["memory_id"] != new["memory_id"] for m in mem.relevant(["x"], ["src:hris-reorg"], now=0))
 
 
@@ -212,8 +226,8 @@ def test_memory_workspace_isolation(falkor: GraphClient):
         seed(falkor, a, "ghost_credential_a")
         seed(falkor, b, "ghost_credential_b")
         ma, mb = MemoryService(Repository(falkor, a)), MemoryService(Repository(falkor, b))
-        assert {m["memory_id"] for m in ma.list()} & {m["memory_id"] for m in mb.list()} == set()
-        assert ma.list() and not mb.list()
+        assert {m["memory_id"] for m in ma.entries()} & {m["memory_id"] for m in mb.entries()} == set()
+        assert ma.entries() and not mb.entries()
         # tools are scoped too: workspace B's toolbox cannot read A's records
         tb = ToolBox(Repository(falkor, b), "memory_curator")
         assert tb.call("get_evidence", source_ids=["src:idp-signin"]) == []

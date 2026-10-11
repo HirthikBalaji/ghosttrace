@@ -65,27 +65,43 @@ def load(data: dict[str, Any], workspace_id: str, checker: PreconditionChecker =
     compromised = set(data["incident"]["compromised_set"])
     for n in data["nodes"]:
         props = {k: v for k, v in n.items() if k not in NodeKeys}
-        led.add_node(Node(id=n["id"], label=n["label"], workspace_id=workspace_id, name=n.get("name", ""),
-                          props=props))
+        led.add_node(Node(id=n["id"], label=n["label"], workspace_id=workspace_id, name=n.get("name", ""), props=props))
     for s in data["sources"]:
         written_on = s.get("written_on")
-        led.add_source(SourceRecord(
-            source_id=s["source_id"], integrity=s["integrity"],
-            # Threat model: records written on hosts in the suspected-compromised set are attacker-influenceable.
-            attacker_influenceable=bool(written_on in compromised) or bool(s.get("attacker_influenceable", False)),
-            root_id=s["root_id"], trust_class=s["trust_class"], observed_at=parse_iso(s["observed_at"]),
-            ingested_at=parse_iso(s["ingested_at"]), derived_from=list(s.get("derived_from", [])),
-            system=s.get("system", ""), content=s.get("content", ""),
-            contains_instructions=contains_instructions(s.get("content", "")),
-        ))
+        led.add_source(
+            SourceRecord(
+                source_id=s["source_id"],
+                integrity=s["integrity"],
+                # Threat model: records written on hosts in the suspected-compromised set are attacker-influenceable.
+                attacker_influenceable=bool(written_on in compromised) or bool(s.get("attacker_influenceable", False)),
+                root_id=s["root_id"],
+                trust_class=s["trust_class"],
+                observed_at=parse_iso(s["observed_at"]),
+                ingested_at=parse_iso(s["ingested_at"]),
+                derived_from=list(s.get("derived_from", [])),
+                system=s.get("system", ""),
+                content=s.get("content", ""),
+                contains_instructions=contains_instructions(s.get("content", "")),
+            )
+        )
     nominations: list[dict[str, Any]] = []
     for ev in sorted(data["events"], key=lambda e: parse_iso(e["at"])):
         op = ev["op"]
         if op == "assert":
-            led.assert_edge(fact_id=ev["fact_id"], type=ev["type"], src=ev["src"], dst=ev["dst"], at=ev["at"],
-                            source_ids=ev["sources"], valid_from=ev.get("valid_from"), valid_to=ev.get("valid_to"),
-                            valid_open_ended=ev.get("valid_open_ended", False), stale=ev.get("stale", False),
-                            cost_remove=ev.get("cost_remove"), note=ev.get("note", ""))
+            led.assert_edge(
+                fact_id=ev["fact_id"],
+                type=ev["type"],
+                src=ev["src"],
+                dst=ev["dst"],
+                at=ev["at"],
+                source_ids=ev["sources"],
+                valid_from=ev.get("valid_from"),
+                valid_to=ev.get("valid_to"),
+                valid_open_ended=ev.get("valid_open_ended", False),
+                stale=ev.get("stale", False),
+                cost_remove=ev.get("cost_remove"),
+                note=ev.get("note", ""),
+            )
         elif op == "remove":
             led.remove_edge(fact_id=ev["fact_id"], removed_at=ev["removed_at"], at=ev["at"], source_ids=ev["sources"])
         elif op == "correct":
@@ -93,46 +109,75 @@ def load(data: dict[str, Any], workspace_id: str, checker: PreconditionChecker =
             led.correct_edge(fact_id=ev["fact_id"], at=ev["at"], source_ids=ev["sources"], **changes)
         elif op == "latent" and data.get("generated"):
             # Benchmark generator only: latent edges inserted directly (preconditions bypassed, documented).
-            led.add_latent(template_id=ev["template_id"], type=ev["type"], src=ev["src"], dst=ev["dst"],
-                           at=ev["at"], verify_cost=int(ev["verify_cost"]), created_by="generator")
+            led.add_latent(
+                template_id=ev["template_id"],
+                type=ev["type"],
+                src=ev["src"],
+                dst=ev["dst"],
+                at=ev["at"],
+                verify_cost=int(ev["verify_cost"]),
+                created_by="generator",
+            )
         elif op == "nominate_latent":
-            nominations.append(nominate(led, ev["template_id"], ev["src"], ev["dst"], parse_iso(ev["at"]),
-                                        ev.get("nominated_by", "unknown"), checker))
+            nominations.append(
+                nominate(
+                    led, ev["template_id"], ev["src"], ev["dst"], parse_iso(ev["at"]), ev.get("nominated_by", "unknown"), checker
+                )
+            )
         else:
             raise IngestionError(f"unknown event op {op}")
     led.derive()
     inc = dict(data["incident"])
     meta = ScenarioMeta(
-        scenario_id=data["scenario_id"], title=data["title"], description=data.get("description", ""),
-        incident=inc, now=parse_iso(data["clock"]["now"]),
-        flows=[Flow(f["flow_id"], f["u"], f["v"], int(f["weight"]), f["kind"], f.get("description", ""))
-               for f in data["flows"]],
-        incident_evidence=list(data.get("incident_evidence", [])), memory_seed=list(data.get("memory_seed", [])),
-        contradictions=list(data.get("contradictions", [])), nominations=nominations,
+        scenario_id=data["scenario_id"],
+        title=data["title"],
+        description=data.get("description", ""),
+        incident=inc,
+        now=parse_iso(data["clock"]["now"]),
+        flows=[Flow(f["flow_id"], f["u"], f["v"], int(f["weight"]), f["kind"], f.get("description", "")) for f in data["flows"]],
+        incident_evidence=list(data.get("incident_evidence", [])),
+        memory_seed=list(data.get("memory_seed", [])),
+        contradictions=list(data.get("contradictions", [])),
+        nominations=nominations,
     )
     return led, meta
 
 
-def nominate(led: Ledger, template_id: str, src: str, dst: str, at: int, nominated_by: str,
-             checker: PreconditionChecker) -> dict[str, Any]:
+def nominate(
+    led: Ledger, template_id: str, src: str, dst: str, at: int, nominated_by: str, checker: PreconditionChecker
+) -> dict[str, Any]:
     """Accept a latent-edge nomination only if the template is allowlisted and its preconditions hold."""
     rec = {"template_id": template_id, "src": src, "dst": dst, "nominated_by": nominated_by, "at": at}
     try:
-        t = check_types(template_id, led.nodes[src].label if src in led.nodes else None,
-                        led.nodes[dst].label if dst in led.nodes else None)
+        t = check_types(
+            template_id, led.nodes[src].label if src in led.nodes else None, led.nodes[dst].label if dst in led.nodes else None
+        )
     except TemplateRejected as exc:
         return rec | {"accepted": False, "reason": str(exc)}
     if not checker(template_id, src, dst, at, led):
         return rec | {"accepted": False, "reason": "preconditions not satisfied by the graph"}
-    led.add_latent(template_id=template_id, type=t.edge_type, src=src, dst=dst, at=at, verify_cost=t.verify_cost,
-                   created_by=f"template_engine (nominated by {nominated_by})", note=t.explanation)
+    led.add_latent(
+        template_id=template_id,
+        type=t.edge_type,
+        src=src,
+        dst=dst,
+        at=at,
+        verify_cost=t.verify_cost,
+        created_by=f"template_engine (nominated by {nominated_by})",
+        note=t.explanation,
+    )
     return rec | {"accepted": True, "reason": t.explanation}
 
 
 def world_from(led: Ledger, meta: ScenarioMeta) -> World:
     props = {n.id: {"label": n.label, "name": n.name, **n.props} for n in led.nodes.values()}
-    return World(workspace_id=led.workspace_id, versions=led.all_versions(), sources=dict(led.sources),
-                 node_props=props, flows=list(meta.flows), attack_sources=list(meta.incident["compromised_set"]),
-                 targets=list(meta.incident["targets"]),
-                 meta={"scenario_id": meta.scenario_id, "now": meta.now,
-                       "T_incident": parse_iso(meta.incident["T_incident"])})
+    return World(
+        workspace_id=led.workspace_id,
+        versions=led.all_versions(),
+        sources=dict(led.sources),
+        node_props=props,
+        flows=list(meta.flows),
+        attack_sources=list(meta.incident["compromised_set"]),
+        targets=list(meta.incident["targets"]),
+        meta={"scenario_id": meta.scenario_id, "now": meta.now, "T_incident": parse_iso(meta.incident["T_incident"])},
+    )

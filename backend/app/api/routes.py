@@ -107,9 +107,16 @@ def scenarios(p: Auth) -> dict[str, Any]:
         loaded = None
     for sid in list_scenarios():
         d = read_scenario(sid)
-        out.append({"scenario_id": sid, "title": d["title"], "description": d["description"], "synthetic": True,
-                    "incident": {k: d["incident"][k] for k in ("incident_id", "title", "severity", "T_incident")},
-                    "loaded": sid == loaded})
+        out.append(
+            {
+                "scenario_id": sid,
+                "title": d["title"],
+                "description": d["description"],
+                "synthetic": True,
+                "incident": {k: d["incident"][k] for k in ("incident_id", "title", "severity", "T_incident")},
+                "loaded": sid == loaded,
+            }
+        )
     return ok(out, workspace_id=p.workspace_id)
 
 
@@ -185,9 +192,15 @@ def cancel_investigation(inv_id: str, repo: Repo) -> dict[str, Any]:
 
 
 @router.get("/investigations/{inv_id}/graph")
-def graph_view(inv_id: str, repo: Repo, T: str | None = None, tau: str | None = None,
-               policy: TrustPolicy = TrustPolicy.CONSERVATIVE, include_knowledge: bool = False,
-               include_inactive: bool = True) -> dict[str, Any]:
+def graph_view(
+    inv_id: str,
+    repo: Repo,
+    T: str | None = None,
+    tau: str | None = None,
+    policy: TrustPolicy = TrustPolicy.CONSERVATIVE,
+    include_knowledge: bool = False,
+    include_inactive: bool = True,
+) -> dict[str, Any]:
     inv = _inv(repo, inv_id)
     T_ms, tau_ms = ts(T, inv["T_analysis"]), ts(tau, inv["tau_analysis"])
     w = repo.world(tau_ms)
@@ -199,28 +212,75 @@ def graph_view(inv_id: str, repo: Repo, T: str | None = None, tau: str | None = 
         if e.type not in types:
             continue
         v = vmap.get((e.edge_id, e.version))
-        edges.append({"edge_id": e.edge_id, "version": e.version, "type": e.type, "src": e.src, "dst": e.dst,
-                      "cls": e.cls, "temporal": e.temporal, "flags": e.flags, "template_id": e.template_id,
-                      "verify_cost": e.verify_cost, "source_ids": e.source_ids, "dispute_source_ids": e.dispute_source_ids,
-                      "confirmed": e.confirmed, "kind": v.kind if v else None, "rule_id": v.rule_id if v else None,
-                      "parent_ids": v.parent_ids if v else [], "note": safe_text(v.note) if v else "",
-                      "valid_from": to_iso(v.valid_from) if v else None, "valid_to": to_iso(v.valid_to) if v else None,
-                      "valid_open_ended": v.valid_open_ended if v else None,
-                      "tx_from": to_iso(v.tx_from) if v else None, "tx_to": to_iso(v.tx_to) if v else None})
+        edges.append(
+            {
+                "edge_id": e.edge_id,
+                "version": e.version,
+                "type": e.type,
+                "src": e.src,
+                "dst": e.dst,
+                "cls": e.cls,
+                "temporal": e.temporal,
+                "flags": e.flags,
+                "template_id": e.template_id,
+                "verify_cost": e.verify_cost,
+                "source_ids": e.source_ids,
+                "dispute_source_ids": e.dispute_source_ids,
+                "confirmed": e.confirmed,
+                "kind": v.kind if v else None,
+                "rule_id": v.rule_id if v else None,
+                "parent_ids": v.parent_ids if v else [],
+                "note": safe_text(v.note) if v else "",
+                "valid_from": to_iso(v.valid_from) if v else None,
+                "valid_to": to_iso(v.valid_to) if v else None,
+                "valid_open_ended": v.valid_open_ended if v else None,
+                "tx_from": to_iso(v.tx_from) if v else None,
+                "tx_to": to_iso(v.tx_to) if v else None,
+            }
+        )
     inactive = []
     if include_inactive:
         for v in w.versions:
             if v.type in types and v.edge_id not in snap and temporal_status(v, T_ms, tau_ms) == TemporalStatus.INACTIVE:
-                inactive.append({"edge_id": v.edge_id, "version": v.version, "type": v.type, "src": v.src, "dst": v.dst,
-                                 "temporal": "INACTIVE", "valid_from": to_iso(v.valid_from), "valid_to": to_iso(v.valid_to),
-                                 "tx_from": to_iso(v.tx_from), "valid_to_source_ids": v.valid_to_source_ids})
+                inactive.append(
+                    {
+                        "edge_id": v.edge_id,
+                        "version": v.version,
+                        "type": v.type,
+                        "src": v.src,
+                        "dst": v.dst,
+                        "temporal": "INACTIVE",
+                        "valid_from": to_iso(v.valid_from),
+                        "valid_to": to_iso(v.valid_to),
+                        "tx_from": to_iso(v.tx_from),
+                        "valid_to_source_ids": v.valid_to_source_ids,
+                    }
+                )
     ids = {e["src"] for e in edges + inactive} | {e["dst"] for e in edges + inactive} | set(w.attack_sources) | set(w.targets)
-    nodes = [{"id": n, "label": w.node_props.get(n, {}).get("label", "?"), "name": safe_text(w.node_props.get(n, {}).get("name", n)),
-              "is_source": n in w.attack_sources, "is_target": n in w.targets,
-              "segment": w.node_props.get(n, {}).get("segment")} for n in sorted(ids)]
-    return ok({"nodes": nodes, "edges": edges, "inactive_edges": inactive, "T": to_iso(T_ms), "tau": to_iso(tau_ms),
-               "T_ms": T_ms, "tau_ms": tau_ms, "policy": policy.value,
-               "bounds": {"T_incident": inv["T_incident"], "now": inv["T_analysis"]}})
+    nodes = [
+        {
+            "id": n,
+            "label": w.node_props.get(n, {}).get("label", "?"),
+            "name": safe_text(w.node_props.get(n, {}).get("name", n)),
+            "is_source": n in w.attack_sources,
+            "is_target": n in w.targets,
+            "segment": w.node_props.get(n, {}).get("segment"),
+        }
+        for n in sorted(ids)
+    ]
+    return ok(
+        {
+            "nodes": nodes,
+            "edges": edges,
+            "inactive_edges": inactive,
+            "T": to_iso(T_ms),
+            "tau": to_iso(tau_ms),
+            "T_ms": T_ms,
+            "tau_ms": tau_ms,
+            "policy": policy.value,
+            "bounds": {"T_incident": inv["T_incident"], "now": inv["T_analysis"]},
+        }
+    )
 
 
 @router.get("/investigations/{inv_id}/edges/{edge_id:path}/history")
@@ -242,8 +302,15 @@ def evidence(inv_id: str, repo: Repo) -> dict[str, Any]:
     inc_ev = {p["source_id"] for (p,) in repo.ro(Q.INCIDENT_EVIDENCE, {"iid": inv["incident_id"]})}
     out = []
     for s in sorted(srcs.values(), key=lambda s: s.observed_at):
-        out.append(s.to_dict() | {"content": safe_text(s.content), "observed_at_iso": to_iso(s.observed_at),
-                                  "ingested_at_iso": to_iso(s.ingested_at), "incident_evidence": s.source_id in inc_ev})
+        out.append(
+            s.to_dict()
+            | {
+                "content": safe_text(s.content),
+                "observed_at_iso": to_iso(s.observed_at),
+                "ingested_at_iso": to_iso(s.ingested_at),
+                "incident_evidence": s.source_id in inc_ev,
+            }
+        )
     return ok(out)
 
 
@@ -263,10 +330,23 @@ def containment(inv_id: str, repo: Repo) -> dict[str, Any]:
     key = "containment_planner#replan" if "containment_planner#replan" in outs else "containment_planner"
     po = outs.get(key)
     plans = repo.list_artifacts("Plan", inv_id)
-    certs = [{"certificate_id": c["id"], "status": c["status"], "k_certified": c.get("k_certified"),
-              "statement": c["payload"]["certificate"]["statement"]} for c in repo.list_artifacts("Certificate", inv_id)]
-    return ok({"planner": po["output"] if po else None, "plans": [p["payload"] for p in plans], "certificates": certs,
-               "red_team": (outs.get("red_team") or {}).get("output")})
+    certs = [
+        {
+            "certificate_id": c["id"],
+            "status": c["status"],
+            "k_certified": c.get("k_certified"),
+            "statement": c["payload"]["certificate"]["statement"],
+        }
+        for c in repo.list_artifacts("Certificate", inv_id)
+    ]
+    return ok(
+        {
+            "planner": po["output"] if po else None,
+            "plans": [p["payload"] for p in plans],
+            "certificates": certs,
+            "red_team": (outs.get("red_team") or {}).get("output"),
+        }
+    )
 
 
 class SimulateBody(BaseModel):
@@ -286,18 +366,31 @@ def simulate(inv_id: str, body: SimulateBody, repo: Repo, p: Auth) -> dict[str, 
         edges, cands, res = engine.simulate(w, T_ms, tau_ms, body.policy, body.action_ids)
     except (KappaError, KeyError, StopIteration) as exc:
         raise HTTPException(status_code=422, detail=f"invalid action: {exc}") from exc
-    cert, lines = engine.certify_plan(w, T_ms, tau_ms, body.policy, edges, cands, res, max(res.k, 0),
-                                      with_load_bearing=res.status == "contained")
-    repo.save_artifact("Certificate", inv_id, cert["certificate_id"], {"certificate": cert, "export": lines},
-                       status=cert["status"], k_certified=cert["robustness"]["k_certified"], simulated_by=p.subject)
-    repo.audit(inv_id, p.subject, "containment.simulated", {"actions": body.action_ids, "status": cert["status"],
-                                                            "certificate_id": cert["certificate_id"]})
+    cert, lines = engine.certify_plan(
+        w, T_ms, tau_ms, body.policy, edges, cands, res, max(res.k, 0), with_load_bearing=res.status == "contained"
+    )
+    repo.save_artifact(
+        "Certificate",
+        inv_id,
+        cert["certificate_id"],
+        {"certificate": cert, "export": lines},
+        status=cert["status"],
+        k_certified=cert["robustness"]["k_certified"],
+        simulated_by=p.subject,
+    )
+    repo.audit(
+        inv_id,
+        p.subject,
+        "containment.simulated",
+        {"actions": body.action_ids, "status": cert["status"], "certificate_id": cert["certificate_id"]},
+    )
     return ok({"certificate": cert, "candidates": [a.to_dict() for a in cands]})
 
 
 @router.get("/investigations/{inv_id}/containment/candidates")
-def candidates(inv_id: str, repo: Repo, T: str | None = None, tau: str | None = None,
-               policy: TrustPolicy = TrustPolicy.CONSERVATIVE) -> dict[str, Any]:
+def candidates(
+    inv_id: str, repo: Repo, T: str | None = None, tau: str | None = None, policy: TrustPolicy = TrustPolicy.CONSERVATIVE
+) -> dict[str, Any]:
     inv = _inv(repo, inv_id)
     T_ms, tau_ms = ts(T, inv["T_analysis"]), ts(tau, inv["tau_analysis"])
     w = repo.world(tau_ms)
@@ -306,16 +399,39 @@ def candidates(inv_id: str, repo: Repo, T: str | None = None, tau: str | None = 
 
 
 @router.get("/investigations/{inv_id}/containment/pareto")
-def pareto(inv_id: str, repo: Repo, p: Auth, T: str | None = None, tau: str | None = None,
-           policy: TrustPolicy = TrustPolicy.CONSERVATIVE, K: int = Query(2, ge=0, le=3)) -> dict[str, Any]:
+def pareto(
+    inv_id: str,
+    repo: Repo,
+    p: Auth,
+    T: str | None = None,
+    tau: str | None = None,
+    policy: TrustPolicy = TrustPolicy.CONSERVATIVE,
+    K: int = Query(2, ge=0, le=3),
+) -> dict[str, Any]:
     inv = _inv(repo, inv_id)
     limiter().check(f"pareto:{p.workspace_id}", 1)
     T_ms, tau_ms = ts(T, inv["T_analysis"]), ts(tau, inv["tau_analysis"])
     res = engine.pareto(repo.world(tau_ms), T_ms, tau_ms, policy, K)
-    return ok({"points": engine.pareto_points(res), "T": to_iso(T_ms), "tau": to_iso(tau_ms), "policy": policy.value,
-               "plans": [{"k": r.k, "status": r.status, "actions": [a.to_dict() for a in r.actions],
-                          "witness": [e.edge_id for e in r.witness], "flows": r.flows, "iterations": r.iterations,
-                          "elapsed_ms": round(r.elapsed_ms, 2)} for r in res]})
+    return ok(
+        {
+            "points": engine.pareto_points(res),
+            "T": to_iso(T_ms),
+            "tau": to_iso(tau_ms),
+            "policy": policy.value,
+            "plans": [
+                {
+                    "k": r.k,
+                    "status": r.status,
+                    "actions": [a.to_dict() for a in r.actions],
+                    "witness": [e.edge_id for e in r.witness],
+                    "flows": r.flows,
+                    "iterations": r.iterations,
+                    "elapsed_ms": round(r.elapsed_ms, 2),
+                }
+                for r in res
+            ],
+        }
+    )
 
 
 def _cert(repo: Repository, inv_id: str, cid: str) -> dict[str, Any]:
@@ -331,8 +447,13 @@ def _cert(repo: Repository, inv_id: str, cid: str) -> dict[str, Any]:
 def get_certificate(inv_id: str, cid: str, repo: Repo) -> dict[str, Any]:
     _inv(repo, inv_id)
     art = _cert(repo, inv_id, cid)
-    return ok({"certificate": art["payload"]["certificate"], "export_lines": len(art["payload"]["export"]),
-               "last_verification": art.get("last_verification")})
+    return ok(
+        {
+            "certificate": art["payload"]["certificate"],
+            "export_lines": len(art["payload"]["export"]),
+            "last_verification": art.get("last_verification"),
+        }
+    )
 
 
 @router.get("/investigations/{inv_id}/certificate/{cid}/export", response_class=PlainTextResponse)
@@ -350,10 +471,22 @@ def run_verifier(cert: dict[str, Any], lines: list[dict[str, Any]], tag: str) ->
     cpath.write_text(json.dumps(cert))
     epath.write_text("\n".join(json.dumps(x) for x in lines) + "\n")
     env = {"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"}
-    proc = subprocess.run([sys.executable, "-E", "-s", "-m", "verifier", "check", str(cpath), str(epath)],  # noqa: S603
-                          cwd=str(REPO_ROOT), env=env, capture_output=True, text=True, timeout=60, check=False)
-    return {"exit_code": proc.returncode, "accepted": proc.returncode == 0, "output": proc.stdout.strip()[:4000],
-            "stderr": proc.stderr.strip()[-1000:], "command": "python -m verifier check cert.json edges.jsonl"}
+    proc = subprocess.run(  # noqa: S603 - fixed argv, no shell; paths are server-generated
+        [sys.executable, "-E", "-s", "-m", "verifier", "check", str(cpath), str(epath)],
+        cwd=str(REPO_ROOT),
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    return {
+        "exit_code": proc.returncode,
+        "accepted": proc.returncode == 0,
+        "output": proc.stdout.strip()[:4000],
+        "stderr": proc.stderr.strip()[-1000:],
+        "command": "python -m verifier check cert.json edges.jsonl",
+    }
 
 
 @router.post("/investigations/{inv_id}/certificate/{cid}/verify")
@@ -362,8 +495,12 @@ def verify_certificate(inv_id: str, cid: str, repo: Repo, p: Auth) -> dict[str, 
     art = _cert(repo, inv_id, cid)
     limiter().check(f"verify:{p.workspace_id}", 1)
     result = run_verifier(art["payload"]["certificate"], art["payload"]["export"], cid)
-    repo.audit(inv_id, p.subject, "certificate.verified", {"certificate_id": cid, "accepted": result["accepted"],
-                                                           "output": result["output"][:500]})
+    repo.audit(
+        inv_id,
+        p.subject,
+        "certificate.verified",
+        {"certificate_id": cid, "accepted": result["accepted"], "output": result["output"][:500]},
+    )
     return ok(result)
 
 
@@ -374,8 +511,13 @@ def load_bearing(inv_id: str, repo: Repo) -> dict[str, Any]:
     for c in repo.list_artifacts("Certificate", inv_id):
         cert = c["payload"]["certificate"]
         if cert["status"] == "contained":
-            out.append({"certificate_id": c["id"], "k_certified": cert["robustness"]["k_certified"],
-                        "load_bearing": cert.get("load_bearing_detail", [])})
+            out.append(
+                {
+                    "certificate_id": c["id"],
+                    "k_certified": cert["robustness"]["k_certified"],
+                    "load_bearing": cert.get("load_bearing_detail", []),
+                }
+            )
     return ok(out)
 
 
@@ -391,26 +533,48 @@ def report(inv_id: str, repo: Repo, fmt: Literal["json", "md"] = Query("json", a
     inv = _inv(repo, inv_id)
     outs = _outputs(repo, inv_id)
     certs = [c["payload"]["certificate"] for c in repo.list_artifacts("Certificate", inv_id)]
-    data = {"investigation": inv, "outputs": outs, "certificates": certs, "audit": repo.get_audit(inv_id),
-            "disclaimer": "SYNTHETIC demo data. All actions are simulations; nothing was executed."}
+    data = {
+        "investigation": inv,
+        "outputs": outs,
+        "certificates": certs,
+        "audit": repo.get_audit(inv_id),
+        "disclaimer": "SYNTHETIC demo data. All actions are simulations; nothing was executed.",
+    }
     if fmt == "json":
         return ok(data)
-    lines = [f"# GHOSTTRACE report — {inv['title']}", "", "> SYNTHETIC demo data. All actions are simulations.", "",
-             f"- Investigation: `{inv['id']}` status **{inv['status']}**",
-             f"- Analysis clock: T={to_iso(inv['T_analysis'])}, tau={to_iso(inv['tau_analysis'])} ({inv.get('clock')})", ""]
+    lines = [
+        f"# GHOSTTRACE report — {inv['title']}",
+        "",
+        "> SYNTHETIC demo data. All actions are simulations.",
+        "",
+        f"- Investigation: `{inv['id']}` status **{inv['status']}**",
+        f"- Analysis clock: T={to_iso(inv['T_analysis'])}, tau={to_iso(inv['tau_analysis'])} ({inv.get('clock')})",
+        "",
+    ]
     iv = (outs.get("investigator") or {}).get("output")
     if iv:
         lines += ["## Hypotheses", ""] + [f"- {h['title']}" for h in iv["hypotheses"]] + ["", iv["reasoning_summary"], ""]
     vo = (outs.get("evidence_verifier") or {}).get("output")
     if vo:
-        lines += ["## Verification", ""] + [f"- `{v['hypothesis_id']}`: **{v['status']}** — {'; '.join(v['reasons'])}"
-                                            for v in vo["verdicts"]] + [""]
+        lines += (
+            ["## Verification", ""]
+            + [f"- `{v['hypothesis_id']}`: **{v['status']}** — {'; '.join(v['reasons'])}" for v in vo["verdicts"]]
+            + [""]
+        )
     lines += ["## Certificates", ""]
     for c in certs:
-        lines += [f"### {c['certificate_id']} — {c['status']}", "", c["statement"], "",
-                  f"- actions: {[a['id'] for a in c['actions']]}", f"- cost: {c['cost']}",
-                  f"- optimality: {c['optimality']['status']}", f"- requires human scrutiny: {c['requires_human_scrutiny']}",
-                  f"- load-bearing evidence: {c['load_bearing_evidence']}", ""]
+        lines += [
+            f"### {c['certificate_id']} — {c['status']}",
+            "",
+            c["statement"],
+            "",
+            f"- actions: {[a['id'] for a in c['actions']]}",
+            f"- cost: {c['cost']}",
+            f"- optimality: {c['optimality']['status']}",
+            f"- requires human scrutiny: {c['requires_human_scrutiny']}",
+            f"- load-bearing evidence: {c['load_bearing_evidence']}",
+            "",
+        ]
     return PlainTextResponse("\n".join(lines), media_type="text/markdown")
 
 
@@ -420,26 +584,36 @@ def _brain(repo: Repository, q: str, subject: str, T: str | None, tau: str | Non
     if len(subject) > 120:
         raise HTTPException(status_code=422, detail="subject too long")
     T_ms, tau_ms = ts(T, m["now"]), ts(tau, m["now"])
-    ans = CompanyBrain(repo).ask(BrainQuery(question=q, subject_id=subject, T=T_ms, tau=tau_ms))  # type: ignore[arg-type]
+    ans = CompanyBrain(repo).ask(BrainQuery(question=q, subject_id=subject, T=T_ms, tau=tau_ms))
     return ok(ans.model_dump())
 
 
 @router.get("/company/owners")
-def owners(repo: Repo, service_id: str = Query(..., max_length=120), asof_T: str | None = None,
-           known_tau: str | None = None) -> dict[str, Any]:
+def owners(
+    repo: Repo, service_id: str = Query(..., max_length=120), asof_T: str | None = None, known_tau: str | None = None
+) -> dict[str, Any]:
     return _brain(repo, "owner", service_id, asof_T, known_tau)
 
 
 @router.get("/company/dependencies/{asset_id:path}")
-def dependencies(asset_id: str, repo: Repo, direction: Literal["dependents", "dependencies"] = "dependents",
-                 asof_T: str | None = None, known_tau: str | None = None) -> dict[str, Any]:
+def dependencies(
+    asset_id: str,
+    repo: Repo,
+    direction: Literal["dependents", "dependencies"] = "dependents",
+    asof_T: str | None = None,
+    known_tau: str | None = None,
+) -> dict[str, Any]:
     return _brain(repo, direction, asset_id, asof_T, known_tau)
 
 
 @router.get("/company/ask")
-def ask(repo: Repo, question: Literal["owner", "experts", "dependencies", "dependents", "runbooks", "decisions"],
-        subject_id: str = Query(..., max_length=120), asof_T: str | None = None,
-        known_tau: str | None = None) -> dict[str, Any]:
+def ask(
+    repo: Repo,
+    question: Literal["owner", "experts", "dependencies", "dependents", "runbooks", "decisions"],
+    subject_id: str = Query(..., max_length=120),
+    asof_T: str | None = None,
+    known_tau: str | None = None,
+) -> dict[str, Any]:
     return _brain(repo, question, subject_id, asof_T, known_tau)
 
 
@@ -452,7 +626,7 @@ def search(repo: Repo, q: str = Query(..., min_length=1, max_length=60)) -> dict
 # ------------------------------------------------------------------ memory & audit
 @router.get("/memory")
 def memory(repo: Repo, limit: int = Query(200, ge=1, le=500)) -> dict[str, Any]:
-    return ok([m | {"content": safe_text(m.get("content", ""))} for m in MemoryService(repo).list(limit)])
+    return ok([m | {"content": safe_text(m.get("content", ""))} for m in MemoryService(repo).entries(limit)])
 
 
 @router.get("/audit/{inv_id}")
@@ -463,5 +637,11 @@ def audit(inv_id: str, repo: Repo) -> dict[str, Any]:
 
 @router.get("/whoami")
 def whoami(p: Auth, request: Request) -> dict[str, Any]:
-    return ok({"subject": p.subject, "workspace_id": p.workspace_id, "auth_mode": p.mode,
-               "warning": "demo-only authentication; not production auth"})
+    return ok(
+        {
+            "subject": p.subject,
+            "workspace_id": p.workspace_id,
+            "auth_mode": p.mode,
+            "warning": "demo-only authentication; not production auth",
+        }
+    )

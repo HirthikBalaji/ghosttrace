@@ -18,14 +18,22 @@ GRANT_TYPES = frozenset({"CAN_ACCESS", "CAN_ASSUME"})
 WORKLOAD_TYPES = frozenset({"Host", "Service", "BuildRunner", "Asset"})
 
 ACTION_TYPES = (
-    "disable_identity", "revoke_credential", "remove_access_grant", "isolate_workload",
-    "pause_deployment", "block_communication",
+    "disable_identity",
+    "revoke_credential",
+    "remove_access_grant",
+    "isolate_workload",
+    "pause_deployment",
+    "block_communication",
 )
 
 # Default operational costs (integer "disruption units") when the scenario does not seed one.
 DEFAULT_COSTS: dict[str, int] = {
-    "disable_identity": 5, "revoke_credential": 3, "remove_access_grant": 4,
-    "isolate_workload": 10, "pause_deployment": 6, "block_communication": 4,
+    "disable_identity": 5,
+    "revoke_credential": 3,
+    "remove_access_grant": 4,
+    "isolate_workload": 10,
+    "pause_deployment": 6,
+    "block_communication": 4,
 }
 REVERSIBILITY = {
     "disable_identity": "reversible (re-enable account)",
@@ -37,7 +45,9 @@ REVERSIBILITY = {
 }
 NODE_ACTION = {"Identity": "disable_identity", "Credential": "revoke_credential", "Deployment": "pause_deployment"}
 COST_PROP = {
-    "disable_identity": "cost_disable", "revoke_credential": "cost_revoke", "isolate_workload": "cost_isolate",
+    "disable_identity": "cost_disable",
+    "revoke_credential": "cost_revoke",
+    "isolate_workload": "cost_isolate",
     "pause_deployment": "cost_pause",
 }
 
@@ -61,9 +71,15 @@ class Action:
 
     def to_dict(self) -> dict[str, Any]:
         return {
-            "id": self.id, "type": self.type, "target_id": self.target_id, "target_type": self.target_type,
-            "cost": self.cost, "cost_basis": self.cost_basis, "reversibility": self.reversibility,
-            "removes": sorted(self.removes), "supporting_evidence_ids": list(self.supporting_evidence_ids),
+            "id": self.id,
+            "type": self.type,
+            "target_id": self.target_id,
+            "target_type": self.target_type,
+            "cost": self.cost,
+            "cost_basis": self.cost_basis,
+            "reversibility": self.reversibility,
+            "removes": sorted(self.removes),
+            "supporting_evidence_ids": list(self.supporting_evidence_ids),
             "mode": self.mode,
         }
 
@@ -85,8 +101,7 @@ def kappa(action_type: str, target_id: str, edges: list[SnapEdge]) -> frozenset[
     if action_type == "disable_identity":
         if types.get(target_id) != "Identity":
             raise KappaError("disable_identity requires an Identity target")
-        return frozenset(e.edge_id for e in edges
-                         if e.src == target_id or (e.dst == target_id and e.type == "AUTHENTICATES_AS"))
+        return frozenset(e.edge_id for e in edges if e.src == target_id or (e.dst == target_id and e.type == "AUTHENTICATES_AS"))
     if action_type == "revoke_credential":
         if types.get(target_id) != "Credential":
             raise KappaError("revoke_credential requires a Credential target")
@@ -112,8 +127,7 @@ def kappa(action_type: str, target_id: str, edges: list[SnapEdge]) -> frozenset[
     raise KappaError(f"unknown action type {action_type}")
 
 
-def make_action(action_type: str, target_id: str, edges: list[SnapEdge],
-                node_props: Mapping[str, Mapping[str, Any]]) -> Action:
+def make_action(action_type: str, target_id: str, edges: list[SnapEdge], node_props: Mapping[str, Mapping[str, Any]]) -> Action:
     removes = kappa(action_type, target_id, edges)
     types = node_types(edges)
     if action_type in ("remove_access_grant", "block_communication"):
@@ -126,16 +140,33 @@ def make_action(action_type: str, target_id: str, edges: list[SnapEdge],
         target_type = types[target_id]
         basis_src = f"node {target_id}"
     cost = int(seeded) if seeded is not None else DEFAULT_COSTS[action_type]
-    basis = (node_props.get(target_id, {}).get("cost_basis")
-             if seeded is not None and action_type not in ("remove_access_grant", "block_communication") else None)
+    basis = (
+        node_props.get(target_id, {}).get("cost_basis")
+        if seeded is not None and action_type not in ("remove_access_grant", "block_communication")
+        else None
+    )
     basis = basis or (f"seeded on {basis_src}" if seeded is not None else f"default cost for {action_type}")
     support = sorted({s for e in edges if e.edge_id in removes for s in e.source_ids})
-    return Action(action_id(action_type, target_id), action_type, target_id, target_type, cost, basis,
-                  REVERSIBILITY[action_type], removes, tuple(support))
+    return Action(
+        action_id(action_type, target_id),
+        action_type,
+        target_id,
+        target_type,
+        cost,
+        basis,
+        REVERSIBILITY[action_type],
+        removes,
+        tuple(support),
+    )
 
 
-def generate_candidates(edges: list[SnapEdge], sources: Iterable[str], targets: Iterable[str],
-                        node_props: Mapping[str, Mapping[str, Any]], max_candidates: int = 64) -> list[Action]:
+def generate_candidates(
+    edges: list[SnapEdge],
+    sources: Iterable[str],
+    targets: Iterable[str],
+    node_props: Mapping[str, Mapping[str, Any]],
+    max_candidates: int = 64,
+) -> list[Action]:
     """Candidate actions on the relevant subgraph (nodes on some source->target path incl. latent edges)."""
     fwd = forward_set(edges, frozenset(), sources)
     bwd = backward_set(edges, frozenset(), targets)

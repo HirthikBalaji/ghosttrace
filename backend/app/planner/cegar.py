@@ -65,9 +65,13 @@ class PlanResult:
 
     def summary(self) -> dict[str, Any]:
         return {
-            "k": self.k, "status": self.status, "actions": [a.id for a in self.actions],
-            "total": self.total if self.status == "contained" else None, "d": None if self.d == INF else self.d,
-            "optimality": self.optimality, "iterations": self.iterations,
+            "k": self.k,
+            "status": self.status,
+            "actions": [a.id for a in self.actions],
+            "total": self.total if self.status == "contained" else None,
+            "d": None if self.d == INF else self.d,
+            "optimality": self.optimality,
+            "iterations": self.iterations,
         }
 
 
@@ -114,7 +118,7 @@ class _Master:
         return sum(a.cost for a in acts) + self.fe.penalty(_removed(acts))
 
     def solve(self, cutsets: list[frozenset[int]], nogoods: list[frozenset[int]]) -> frozenset[int] | None:
-        best: list[Any] = [None, None]  # (J, set)
+        best: list[Any] = [None, None]  # (J, chosen set)
 
         def rec(chosen: frozenset[int], excluded: frozenset[int]) -> None:
             self.nodes += 1
@@ -137,13 +141,22 @@ class _Master:
                 tried.add(i)
 
         rec(frozenset(), frozenset())
-        return best[1]
+        result: frozenset[int] | None = best[1]
+        return result
 
 
-def solve(edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[str], flows: Sequence[Flow],
-          candidates: list[Action], k: int, budgets: Budgets | None = None,
-          warm_constraints: Sequence[Constraint] = (), warm_nogoods: Sequence[frozenset[str]] = (),
-          false_flag_edges: frozenset[str] = frozenset()) -> PlanResult:
+def solve(
+    edges: list[SnapEdge],
+    sources: Sequence[str],
+    targets: Sequence[str],
+    flows: Sequence[Flow],
+    candidates: list[Action],
+    k: int,
+    budgets: Budgets | None = None,
+    warm_constraints: Sequence[Constraint] = (),
+    warm_nogoods: Sequence[frozenset[str]] = (),
+    false_flag_edges: frozenset[str] = frozenset(),
+) -> PlanResult:
     budgets = budgets or Budgets()
     t0 = time.monotonic()
     deadline = t0 + budgets.timeout_s
@@ -176,8 +189,9 @@ def solve(edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[str],
             if not fe.hard_ok(_removed([candidates[i] for i in idx])):
                 nogoods.append(idx)
 
-    def result(status: str, chosen: frozenset[int] | None, optimality: str, it: int, lb: int | None,
-               reason: str | None = None) -> PlanResult:
+    def result(
+        status: str, chosen: frozenset[int] | None, optimality: str, it: int, lb: int | None, reason: str | None = None
+    ) -> PlanResult:
         acts = sorted((candidates[i] for i in (chosen or frozenset())), key=lambda a: a.id)
         rem = _removed(acts)
         d, wit = reopening_distance(edges, rem, sources, targets)
@@ -185,10 +199,24 @@ def solve(edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[str],
         pen = fe.penalty(rem)
         gap = (op + pen - lb) if (lb is not None and status == "contained") else None
         return PlanResult(
-            k=k, status=status, actions=acts, removed=rem, d=d, witness=wit, cost_operational=op,
-            soft_penalty=pen, flows=fe.state(rem), optimality=optimality, lower_bound=lb, gap=gap,
-            iterations=it, constraints=constraints, nogoods=[frozenset(candidates[i].id for i in ng) for ng in nogoods],
-            search_space=space, infeasible_reason=reason, elapsed_ms=(time.monotonic() - t0) * 1000,
+            k=k,
+            status=status,
+            actions=acts,
+            removed=rem,
+            d=d,
+            witness=wit,
+            cost_operational=op,
+            soft_penalty=pen,
+            flows=fe.state(rem),
+            optimality=optimality,
+            lower_bound=lb,
+            gap=gap,
+            iterations=it,
+            constraints=constraints,
+            nogoods=[frozenset(candidates[i].id for i in ng) for ng in nogoods],
+            search_space=space,
+            infeasible_reason=reason,
+            elapsed_ms=(time.monotonic() - t0) * 1000,
         )
 
     lb: int | None = None
@@ -197,8 +225,14 @@ def solve(edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[str],
         if master.truncated:
             return _fallback(edges, sources, targets, fe, candidates, k, constraints, nogoods, lb, it, space, t0)
         if chosen is None:
-            return result("infeasible", None, "proven_optimal", it, lb,
-                          "no subset of the candidate actions satisfies all constraints and hard flows")
+            return result(
+                "infeasible",
+                None,
+                "proven_optimal",
+                it,
+                lb,
+                "no subset of the candidate actions satisfies all constraints and hard flows",
+            )
         lb = master.J(chosen)
         acts = [candidates[i] for i in chosen]
         rem = _removed(acts)
@@ -209,12 +243,17 @@ def solve(edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[str],
         if d <= k:
             cut = add_constraint(tuple(e.edge_id for e in wit))
             if not cut:
-                return result("infeasible", None, "proven_optimal", it, lb,
-                              f"surviving path {[e.edge_id for e in wit]} has no candidate cutter")
+                return result(
+                    "infeasible",
+                    None,
+                    "proven_optimal",
+                    it,
+                    lb,
+                    f"surviving path {[e.edge_id for e in wit]} has no candidate cutter",
+                )
             continue
         return result("contained", chosen, "proven_optimal", it, lb)
-    return _fallback(edges, sources, targets, fe, candidates, k, constraints, nogoods, lb,
-                     budgets.max_iterations, space, t0)
+    return _fallback(edges, sources, targets, fe, candidates, k, constraints, nogoods, lb, budgets.max_iterations, space, t0)
 
 
 def _minimise_nogood(chosen: frozenset[int], candidates: list[Action], fe: FlowEvaluator) -> frozenset[int]:
@@ -226,9 +265,20 @@ def _minimise_nogood(chosen: frozenset[int], candidates: list[Action], fe: FlowE
     return frozenset(core)
 
 
-def _fallback(edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[str], fe: FlowEvaluator,
-              candidates: list[Action], k: int, constraints: list[Constraint], nogoods: list[frozenset[int]],
-              lb: int | None, it: int, space: str, t0: float) -> PlanResult:
+def _fallback(
+    edges: list[SnapEdge],
+    sources: Sequence[str],
+    targets: Sequence[str],
+    fe: FlowEvaluator,
+    candidates: list[Action],
+    k: int,
+    constraints: list[Constraint],
+    nogoods: list[frozenset[int]],
+    lb: int | None,
+    it: int,
+    space: str,
+    t0: float,
+) -> PlanResult:
     """Budget exhausted: greedy anytime repair. Reported as bounded (with gap) or heuristic, never optimal."""
     chosen: list[Action] = []
     for _ in range(len(candidates)):
@@ -237,8 +287,7 @@ def _fallback(edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[s
         if d > k:
             break
         path = {e.edge_id for e in wit}
-        opts = [a for a in candidates if a not in chosen and a.removes & path
-                and fe.hard_ok(_removed([*chosen, a]))]
+        opts = [a for a in candidates if a not in chosen and a.removes & path and fe.hard_ok(_removed([*chosen, a]))]
         if not opts:
             chosen = []
             break
@@ -251,25 +300,48 @@ def _fallback(edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[s
     status = "contained" if ok else "budget_exhausted"
     opt = "bounded" if (ok and lb is not None) else "heuristic"
     return PlanResult(
-        k=k, status=status, actions=sorted(chosen, key=lambda a: a.id) if ok else [], removed=rem if ok else frozenset(),
-        d=d, witness=wit, cost_operational=op if ok else 0, soft_penalty=pen if ok else 0, flows=fe.state(rem),
-        optimality=opt, lower_bound=lb, gap=(op + pen - lb) if (ok and lb is not None) else None, iterations=it,
-        constraints=constraints, nogoods=[frozenset(candidates[i].id for i in ng) for ng in nogoods],
-        search_space=space, infeasible_reason=None if ok else "budget exhausted without a feasible plan",
+        k=k,
+        status=status,
+        actions=sorted(chosen, key=lambda a: a.id) if ok else [],
+        removed=rem if ok else frozenset(),
+        d=d,
+        witness=wit,
+        cost_operational=op if ok else 0,
+        soft_penalty=pen if ok else 0,
+        flows=fe.state(rem),
+        optimality=opt,
+        lower_bound=lb,
+        gap=(op + pen - lb) if (ok and lb is not None) else None,
+        iterations=it,
+        constraints=constraints,
+        nogoods=[frozenset(candidates[i].id for i in ng) for ng in nogoods],
+        search_space=space,
+        infeasible_reason=None if ok else "budget exhausted without a feasible plan",
         elapsed_ms=(time.monotonic() - t0) * 1000,
     )
 
 
-def evaluate_plan(edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[str], flows: Sequence[Flow],
-                  actions: list[Action]) -> PlanResult:
+def evaluate_plan(
+    edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[str], flows: Sequence[Flow], actions: list[Action]
+) -> PlanResult:
     """Evaluate a given (e.g. user-selected or baseline) action set without optimising."""
     fe = FlowEvaluator(edges, flows)
     rem = _removed(actions)
     d, wit = reopening_distance(edges, rem, sources, targets)
     status = "contained" if d > 0 and fe.hard_ok(rem) else "not_contained"
     return PlanResult(
-        k=max(int(d) - 1, 0) if d != INF else 0, status=status, actions=sorted(actions, key=lambda a: a.id),
-        removed=rem, d=d, witness=wit, cost_operational=sum(a.cost for a in actions), soft_penalty=fe.penalty(rem),
-        flows=fe.state(rem), optimality="heuristic", lower_bound=None, gap=None, iterations=0,
+        k=max(int(d) - 1, 0) if d != INF else 0,
+        status=status,
+        actions=sorted(actions, key=lambda a: a.id),
+        removed=rem,
+        d=d,
+        witness=wit,
+        cost_operational=sum(a.cost for a in actions),
+        soft_penalty=fe.penalty(rem),
+        flows=fe.state(rem),
+        optimality="heuristic",
+        lower_bound=None,
+        gap=None,
+        iterations=0,
         search_space="user/baseline-selected action set; no optimality claim",
     )

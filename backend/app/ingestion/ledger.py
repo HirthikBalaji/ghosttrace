@@ -66,16 +66,28 @@ class Ledger:
         if at < cur.tx_from:
             raise IngestionError("ingestion time precedes current version")
         cur.tx_to = at
-        new = dataclasses.replace(cur, version=cur.version + 1, tx_from=at, tx_to=None, supersedes=cur.version,
-                                  **changes)
+        new = dataclasses.replace(cur, version=cur.version + 1, tx_from=at, tx_to=None, supersedes=cur.version, **changes)
         new.validity_unknown = validity_unknown(new.valid_from, new.valid_to, new.valid_open_ended)
         self.versions[cur.edge_id].append(new)
         return new
 
     # ------------------------------------------------------------------ facts
-    def assert_edge(self, *, fact_id: str, type: str, src: str, dst: str, at: int | str, source_ids: list[str],
-                    valid_from: Any = None, valid_to: Any = None, valid_open_ended: bool = False,
-                    stale: bool = False, cost_remove: int | None = None, note: str = "") -> str:
+    def assert_edge(
+        self,
+        *,
+        fact_id: str,
+        type: str,
+        src: str,
+        dst: str,
+        at: int | str,
+        source_ids: list[str],
+        valid_from: Any = None,
+        valid_to: Any = None,
+        valid_open_ended: bool = False,
+        stale: bool = False,
+        cost_remove: int | None = None,
+        note: str = "",
+    ) -> str:
         if type not in ALL_FACT_EDGE_TYPES:
             raise IngestionError(f"edge type {type} not allowed")
         at_ms = parse_iso(at)
@@ -84,13 +96,30 @@ class Ledger:
             raise IngestionError("valid_to must be after valid_from")
         srcs = self._check_sources(source_ids)
         cur = self.current(fact_id)
-        fields = dict(type=type, src=src, dst=dst, src_type=self._type(src), dst_type=self._type(dst),
-                      valid_from=vf, valid_to=vt, valid_open_ended=bool(valid_open_ended) and vt is None)
+        fields: dict[str, Any] = {
+            "type": type,
+            "src": src,
+            "dst": dst,
+            "src_type": self._type(src),
+            "dst_type": self._type(dst),
+            "valid_from": vf,
+            "valid_to": vt,
+            "valid_open_ended": bool(valid_open_ended) and vt is None,
+        }
         if cur is None:
             if fact_id in self.versions:
                 raise IngestionError(f"fact {fact_id} has no current version")
-            v = EdgeVersion(edge_id=fact_id, version=1, workspace_id=self.workspace_id, tx_from=at_ms,
-                            source_ids=srcs, stale=stale, cost_remove=cost_remove, note=note, **fields)  # type: ignore[arg-type]
+            v = EdgeVersion(
+                edge_id=fact_id,
+                version=1,
+                workspace_id=self.workspace_id,
+                tx_from=at_ms,
+                source_ids=srcs,
+                stale=stale,
+                cost_remove=cost_remove,
+                note=note,
+                **fields,
+            )
             v.validity_unknown = validity_unknown(v.valid_from, v.valid_to, v.valid_open_ended)
             self.versions[fact_id] = [v]
             self._log("assert", fact_id, at_ms, "created")
@@ -100,8 +129,14 @@ class Ledger:
             self._log("assert", fact_id, at_ms, "duplicate (no-op)")
             return "noop"
         merged = sorted(set(cur.source_ids) | set(srcs)) if same else srcs
-        self._supersede(cur, at_ms, source_ids=merged, stale=stale,
-                        cost_remove=cost_remove if cost_remove is not None else cur.cost_remove, **fields)
+        self._supersede(
+            cur,
+            at_ms,
+            source_ids=merged,
+            stale=stale,
+            cost_remove=cost_remove if cost_remove is not None else cur.cost_remove,
+            **fields,
+        )
         self._log("assert", fact_id, at_ms, "corroborated" if same else "superseded (content changed)")
         return "superseded"
 
@@ -115,8 +150,15 @@ class Ledger:
         if trusted_removal(srcs, self.sources):
             if cur.valid_to is not None and cur.valid_to <= rem and set(srcs) <= set(cur.valid_to_source_ids):
                 return "noop"
-            self._supersede(cur, at_ms, valid_to=rem, valid_open_ended=False, valid_to_source_ids=srcs, prior_valid_to=cur.valid_to,
-                            prior_valid_open_ended=cur.valid_open_ended)
+            self._supersede(
+                cur,
+                at_ms,
+                valid_to=rem,
+                valid_open_ended=False,
+                valid_to_source_ids=srcs,
+                prior_valid_to=cur.valid_to,
+                prior_valid_open_ended=cur.valid_open_ended,
+            )
             self._log("remove", fact_id, at_ms, "closed validity (trusted removal)")
             return "closed"
         if set(srcs) <= set(cur.dispute_source_ids):
@@ -148,16 +190,41 @@ class Ledger:
         self._log("correct", fact_id, at_ms, "superseded (correction/backfill)")
         return "superseded"
 
-    def add_latent(self, *, template_id: str, type: str, src: str, dst: str, at: int | str, verify_cost: int,
-                   source_ids: list[str] | None = None, created_by: str = "template_engine", note: str = "") -> str:
+    def add_latent(
+        self,
+        *,
+        template_id: str,
+        type: str,
+        src: str,
+        dst: str,
+        at: int | str,
+        verify_cost: int,
+        source_ids: list[str] | None = None,
+        created_by: str = "template_engine",
+        note: str = "",
+    ) -> str:
         fact_id = f"lat:{template_id}:{src}->{dst}"
         if self.current(fact_id) is not None:
             return "noop"
         at_ms = parse_iso(at)
-        v = EdgeVersion(edge_id=fact_id, version=1, type=type, src=src, dst=dst, src_type=self._type(src),
-                        dst_type=self._type(dst), workspace_id=self.workspace_id, tx_from=at_ms, kind="latent",
-                        template_id=template_id, verify_cost=verify_cost, valid_open_ended=True,
-                        source_ids=self._check_sources(source_ids or []), created_by=created_by, note=note)
+        v = EdgeVersion(
+            edge_id=fact_id,
+            version=1,
+            type=type,
+            src=src,
+            dst=dst,
+            src_type=self._type(src),
+            dst_type=self._type(dst),
+            workspace_id=self.workspace_id,
+            tx_from=at_ms,
+            kind="latent",
+            template_id=template_id,
+            verify_cost=verify_cost,
+            valid_open_ended=True,
+            source_ids=self._check_sources(source_ids or []),
+            created_by=created_by,
+            note=note,
+        )
         # Latent: existence is the assumption (class LATENT); if it exists it is assumed valid at every T
         # while visible, so paths through it classify as CONDITIONAL(k), not TEMPORALLY_UNCERTAIN.
         v.validity_unknown = False
@@ -175,8 +242,7 @@ class Ledger:
         for fid in [f for f in self.versions if f.startswith("drv:")]:
             del self.versions[fid]
         hp = [v for vs in self.versions.values() for v in vs if v.type == "HAS_POLICY"]
-        ap = [v for vs in self.versions.values() for v in vs if v.type == "APPLIES_TO"
-              and self.nodes[v.src].label == "Policy"]
+        ap = [v for vs in self.versions.values() for v in vs if v.type == "APPLIES_TO" and self.nodes[v.src].label == "Policy"]
         out: dict[str, list[EdgeVersion]] = {}
         for a in hp:
             for b in ap:
@@ -192,13 +258,27 @@ class Ledger:
                 open_ = vt is None and a.valid_open_ended and b.valid_open_ended
                 fid = f"drv:policy_expansion:{a.src}->{b.dst}"
                 lst = out.setdefault(fid, [])
-                v = EdgeVersion(edge_id=fid, version=0, type="CAN_ACCESS", src=a.src, dst=b.dst,
-                                src_type=self.nodes[a.src].label, dst_type=self.nodes[b.dst].label,
-                                workspace_id=self.workspace_id, tx_from=tx_from, tx_to=tx_to, valid_from=vf,
-                                valid_to=vt, valid_open_ended=open_, kind="derived", rule_id="policy_expansion",
-                                parent_ids=[a.edge_id, b.edge_id], cost_remove=a.cost_remove,
-                                source_ids=sorted(set(a.source_ids) | set(b.source_ids)),
-                                created_by="rule:policy_expansion")
+                v = EdgeVersion(
+                    edge_id=fid,
+                    version=0,
+                    type="CAN_ACCESS",
+                    src=a.src,
+                    dst=b.dst,
+                    src_type=self.nodes[a.src].label,
+                    dst_type=self.nodes[b.dst].label,
+                    workspace_id=self.workspace_id,
+                    tx_from=tx_from,
+                    tx_to=tx_to,
+                    valid_from=vf,
+                    valid_to=vt,
+                    valid_open_ended=open_,
+                    kind="derived",
+                    rule_id="policy_expansion",
+                    parent_ids=[a.edge_id, b.edge_id],
+                    cost_remove=a.cost_remove,
+                    source_ids=sorted(set(a.source_ids) | set(b.source_ids)),
+                    created_by="rule:policy_expansion",
+                )
                 v.validity_unknown = validity_unknown(vf, vt, open_)
                 lst.append(v)
         for fid, lst in out.items():

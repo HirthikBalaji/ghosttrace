@@ -54,11 +54,13 @@ def is_visible(tx_from: int, tx_to: int | None, tau: int) -> bool:
 
 
 def temporal_status(f: dict[str, Any] | Any, T: int, tau: int) -> TemporalStatus:
-    g = (lambda k: f.get(k)) if isinstance(f, dict) else (lambda k: getattr(f, k))
+    def g(k: str) -> Any:
+        return f.get(k) if isinstance(f, dict) else getattr(f, k)
+
     if not is_visible(g("tx_from"), g("tx_to"), tau):
         return TemporalStatus.INVISIBLE
     vf, vt = g("valid_from"), g("valid_to")
-    if vt is not None and not T < vt:
+    if vt is not None and not vt > T:
         return TemporalStatus.INACTIVE
     if vf is not None and not vf <= T:
         return TemporalStatus.INACTIVE

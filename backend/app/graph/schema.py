@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import time
 from collections.abc import Callable
 
@@ -10,13 +11,31 @@ from app.graph.queries import SCHEMA_VERSION_GET, SCHEMA_VERSION_SET
 from app.model import ALL_FACT_EDGE_TYPES
 
 NODE_INDEXES = [
-    ("Entity", "id"), ("Entity", "workspace_id"), ("SourceRecord", "source_id"), ("SourceRecord", "workspace_id"),
-    ("Investigation", "id"), ("AgentTask", "task_id"), ("AgentTask", "idempotency_key"), ("Memory", "memory_id"),
-    ("Memory", "workspace_id"), ("AuditEvent", "investigation_id"), ("Certificate", "id"), ("Plan", "id"),
-    ("Hypothesis", "id"), ("AgentOutput", "id"), ("SchemaVersion", "version"), ("Workspace", "id"),
+    ("Entity", "id"),
+    ("Entity", "workspace_id"),
+    ("SourceRecord", "source_id"),
+    ("SourceRecord", "workspace_id"),
+    ("Investigation", "id"),
+    ("AgentTask", "task_id"),
+    ("AgentTask", "idempotency_key"),
+    ("Memory", "memory_id"),
+    ("Memory", "workspace_id"),
+    ("AuditEvent", "investigation_id"),
+    ("Certificate", "id"),
+    ("Plan", "id"),
+    ("Hypothesis", "id"),
+    ("AgentOutput", "id"),
+    ("SchemaVersion", "version"),
+    ("Workspace", "id"),
 ]
-UNIQUE = [("Entity", "id"), ("SourceRecord", "source_id"), ("Investigation", "id"), ("AgentTask", "task_id"),
-          ("AgentTask", "idempotency_key"), ("Memory", "memory_id")]
+UNIQUE = [
+    ("Entity", "id"),
+    ("SourceRecord", "source_id"),
+    ("Investigation", "id"),
+    ("AgentTask", "task_id"),
+    ("AgentTask", "idempotency_key"),
+    ("Memory", "memory_id"),
+]
 # Only edge_id: FalkorDB v4.22.0 mis-binds multi-edge patterns when several relationships have
 # index-eligible filters (Edge By Index Scan); see DECISIONS.md D-008 and tests/test_falkordb_regressions.py.
 EDGE_INDEX_PROPS = ("edge_id",)
@@ -34,12 +53,12 @@ def _ignore_exists(fn: Callable[[], object]) -> None:
 def migration_1(client: GraphClient, ws: str) -> None:
     g = client._g(ws)
     for label, prop in NODE_INDEXES:
-        _ignore_exists(lambda label=label, prop=prop: g.create_node_range_index(label, prop))
+        _ignore_exists(functools.partial(g.create_node_range_index, label, prop))
     for t in ALL_FACT_EDGE_TYPES:
         for prop in EDGE_INDEX_PROPS:
-            _ignore_exists(lambda t=t, prop=prop: g.create_edge_range_index(t, prop))
+            _ignore_exists(functools.partial(g.create_edge_range_index, t, prop))
     for label, prop in UNIQUE:
-        _ignore_exists(lambda label=label, prop=prop: g.create_node_unique_constraint(label, prop))
+        _ignore_exists(functools.partial(g.create_node_unique_constraint, label, prop))
 
 
 def migration_2(client: GraphClient, ws: str) -> None:

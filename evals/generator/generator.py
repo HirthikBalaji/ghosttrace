@@ -20,16 +20,31 @@ from typing import Any
 BASE = datetime(2026, 1, 1, tzinfo=UTC)
 
 TYPE_MAP: dict[tuple[str, str], str] = {
-    ("Identity", "Host"): "CAN_ACCESS", ("Identity", "Service"): "CAN_ACCESS", ("Identity", "Asset"): "CAN_ACCESS",
-    ("Identity", "Identity"): "CAN_ASSUME", ("Host", "Credential"): "HAS_CREDENTIAL",
-    ("Service", "Credential"): "HAS_CREDENTIAL", ("Credential", "Identity"): "AUTHENTICATES_AS",
-    ("Host", "Service"): "CONNECTS_TO", ("Service", "Service"): "CAN_ACCESS", ("Service", "Asset"): "CAN_ACCESS",
-    ("Host", "Host"): "CONNECTS_TO", ("Host", "Asset"): "CAN_ACCESS",
+    ("Identity", "Host"): "CAN_ACCESS",
+    ("Identity", "Service"): "CAN_ACCESS",
+    ("Identity", "Asset"): "CAN_ACCESS",
+    ("Identity", "Identity"): "CAN_ASSUME",
+    ("Host", "Credential"): "HAS_CREDENTIAL",
+    ("Service", "Credential"): "HAS_CREDENTIAL",
+    ("Credential", "Identity"): "AUTHENTICATES_AS",
+    ("Host", "Service"): "CONNECTS_TO",
+    ("Service", "Service"): "CAN_ACCESS",
+    ("Service", "Asset"): "CAN_ACCESS",
+    ("Host", "Host"): "CONNECTS_TO",
+    ("Host", "Asset"): "CAN_ACCESS",
 }
-LATENT_TEMPLATE = {"CAN_ASSUME": "group_inheritance_unmodeled", "CONNECTS_TO": "network_adjacency_unmodeled",
-                   "HAS_CREDENTIAL": "shared_secret_path", "CAN_ACCESS": "wildcard_policy_expansion"}
-VERIFY_COST = {"group_inheritance_unmodeled": 2, "network_adjacency_unmodeled": 3, "shared_secret_path": 2,
-               "wildcard_policy_expansion": 2}
+LATENT_TEMPLATE = {
+    "CAN_ASSUME": "group_inheritance_unmodeled",
+    "CONNECTS_TO": "network_adjacency_unmodeled",
+    "HAS_CREDENTIAL": "shared_secret_path",
+    "CAN_ACCESS": "wildcard_policy_expansion",
+}
+VERIFY_COST = {
+    "group_inheritance_unmodeled": 2,
+    "network_adjacency_unmodeled": 3,
+    "shared_secret_path": 2,
+    "wildcard_policy_expansion": 2,
+}
 MID_TYPES = ["Host", "Credential", "Identity", "Service", "Identity", "Credential"]
 
 
@@ -97,10 +112,19 @@ def generate(seed: int, p: GenParams | None = None) -> Instance:
     edges_seen: set[tuple[str, str]] = set()
     t_assert = iso(BASE + timedelta(days=1))
 
-    def source(sid: str, integrity: str, root: str, trust: str, written_on: str | None = None,
-               derived_from: list[str] | None = None) -> str:
-        rec = {"source_id": sid, "system": "gen", "integrity": integrity, "root_id": root, "trust_class": trust,
-               "observed_at": t_assert, "ingested_at": t_assert, "content": f"synthetic record {sid}"}
+    def source(
+        sid: str, integrity: str, root: str, trust: str, written_on: str | None = None, derived_from: list[str] | None = None
+    ) -> str:
+        rec = {
+            "source_id": sid,
+            "system": "gen",
+            "integrity": integrity,
+            "root_id": root,
+            "trust_class": trust,
+            "observed_at": t_assert,
+            "ingested_at": t_assert,
+            "content": f"synthetic record {sid}",
+        }
         if written_on:
             rec["written_on"] = written_on
         if derived_from:
@@ -115,9 +139,17 @@ def generate(seed: int, p: GenParams | None = None) -> Instance:
         edges_seen.add((a, b))
         eid = f"g:{a}->{b}"
         r = rng.random()
-        ev: dict[str, Any] = {"op": "assert", "at": t_assert, "fact_id": eid, "type": et, "src": a, "dst": b,
-                              "valid_from": iso(BASE), "valid_open_ended": True,
-                              "cost_remove": rng.randint(1, 8)}
+        ev: dict[str, Any] = {
+            "op": "assert",
+            "at": t_assert,
+            "fact_id": eid,
+            "type": et,
+            "src": a,
+            "dst": b,
+            "valid_from": iso(BASE),
+            "valid_open_ended": True,
+            "cost_remove": rng.randint(1, 8),
+        }
         true_now = True
         if not force_true and r < p.ai_frac:
             ev["sources"] = [source(f"s:{eid}:ai", "none", f"root:{eid}:ai", "low", written_on="host:src-ws")]
@@ -134,15 +166,29 @@ def generate(seed: int, p: GenParams | None = None) -> Instance:
         if p.churn and not force_true and true_now and rng.random() < 0.08:
             # trusted revocation before planning time: inactive now (false in W*)
             rs = source(f"s:{eid}:revoke", "signed", f"root:{eid}:revoke", "high")
-            events.append({"op": "remove", "at": iso(T_inc - timedelta(days=2)), "fact_id": eid,
-                           "removed_at": iso(T_inc - timedelta(days=2)), "sources": [rs]})
+            events.append(
+                {
+                    "op": "remove",
+                    "at": iso(T_inc - timedelta(days=2)),
+                    "fact_id": eid,
+                    "removed_at": iso(T_inc - timedelta(days=2)),
+                    "sources": [rs],
+                }
+            )
             revoked.add(eid)
             true_now = False
         elif p.churn and true_now and rng.random() < 0.08:
             # attacker-written log claims removal; edge is in fact still present (R2 case)
             rs = source(f"s:{eid}:fakerevoke", "none", f"root:{eid}:fake", "low", written_on="host:src-ws")
-            events.append({"op": "remove", "at": iso(T_inc + timedelta(hours=2)), "fact_id": eid,
-                           "removed_at": iso(T_inc + timedelta(hours=1)), "sources": [rs]})
+            events.append(
+                {
+                    "op": "remove",
+                    "at": iso(T_inc + timedelta(hours=2)),
+                    "fact_id": eid,
+                    "removed_at": iso(T_inc + timedelta(hours=1)),
+                    "sources": [rs],
+                }
+            )
         if true_now:
             truth.append({"id": eid, "src": a, "dst": b, "type": et})
         return eid
@@ -167,36 +213,52 @@ def generate(seed: int, p: GenParams | None = None) -> Instance:
     for _ in range(int(p.branching * p.n_mid)):
         add_edge(rng.choice(sources + mids), rng.choice(mids + targets))
     # latent template edges (visible as LATENT), true in W* with the declared prior
-    pairs = [(a, b) for a in sources + mids for b in mids + targets
-             if TYPE_MAP.get((types[a], types[b])) in LATENT_TEMPLATE and (a, b) not in edges_seen and a != b
-             and b not in sources]
+    pairs = [
+        (a, b)
+        for a in sources + mids
+        for b in mids + targets
+        if TYPE_MAP.get((types[a], types[b])) in LATENT_TEMPLATE and (a, b) not in edges_seen and a != b and b not in sources
+    ]
     rng.shuffle(pairs)
     n_lat = int(len(pairs) * p.latent_density)
     for a, b in pairs[:n_lat]:
         et = TYPE_MAP[(types[a], types[b])]
         tpl = LATENT_TEMPLATE[et]
         edges_seen.add((a, b))
-        events.append({"op": "latent", "at": t_assert, "template_id": tpl, "type": et, "src": a, "dst": b,
-                       "verify_cost": VERIFY_COST[tpl]})
+        events.append(
+            {"op": "latent", "at": t_assert, "template_id": tpl, "type": et, "src": a, "dst": b, "verify_cost": VERIFY_COST[tpl]}
+        )
         if rng.random() < p.p_latent_true:
             truth.append({"id": f"lat:{tpl}:{a}->{b}", "src": a, "dst": b, "type": et})
     # hidden, unmodeled true edges (outside any certificate's scope by declared assumption)
-    for i, (a, b) in enumerate(pairs[n_lat:n_lat + p.hidden_unmodeled]):
-        truth.append({"id": f"hidden:{i}:{a}->{b}", "src": a, "dst": b, "type": TYPE_MAP[(types[a], types[b])],
-                      "unmodeled": "true"})
+    for i, (a, b) in enumerate(pairs[n_lat : n_lat + p.hidden_unmodeled]):
+        truth.append(
+            {"id": f"hidden:{i}:{a}->{b}", "src": a, "dst": b, "type": TYPE_MAP[(types[a], types[b])], "unmodeled": "true"}
+        )
     # flows between non-source nodes connected by true signed edges
     confirmed_adj: dict[str, list[str]] = {}
     for ev in events:
-        if (ev["op"] == "assert" and ev["fact_id"] not in revoked and len(ev["sources"]) == 1
-                and ev["sources"][0] == f"s:{ev['fact_id']}"):
+        if (
+            ev["op"] == "assert"
+            and ev["fact_id"] not in revoked
+            and len(ev["sources"]) == 1
+            and ev["sources"][0] == f"s:{ev['fact_id']}"
+        ):
             confirmed_adj.setdefault(ev["src"], []).append(ev["dst"])
     flow_pairs = [(u, v) for u, vs in confirmed_adj.items() for v in vs if u not in sources]
     rng.shuffle(flow_pairs)
     flows = []
-    for i, (u, v) in enumerate(flow_pairs[:p.n_hard + p.n_soft]):
+    for i, (u, v) in enumerate(flow_pairs[: p.n_hard + p.n_soft]):
         hard = i < p.n_hard
-        flows.append({"flow_id": f"flow:{i}", "u": u, "v": v, "weight": 100 if hard else rng.randint(1, 5),
-                      "kind": "hard" if hard else "soft"})
+        flows.append(
+            {
+                "flow_id": f"flow:{i}",
+                "u": u,
+                "v": v,
+                "weight": 100 if hard else rng.randint(1, 5),
+                "kind": "hard" if hard else "soft",
+            }
+        )
     # decoy: an attacker-planted edge pointing at a high-fan-in node
     decoy_target = None
     if p.decoy:
@@ -208,20 +270,46 @@ def generate(seed: int, p: GenParams | None = None) -> Instance:
                 edges_seen.add((decoy_target, tg))
                 eid = f"g:{decoy_target}->{tg}:decoy"
                 sid = source(f"s:{eid}", "none", f"root:{eid}", "low", written_on="host:src-ws")
-                events.append({"op": "assert", "at": iso(T_inc + timedelta(hours=1)), "fact_id": eid,
-                               "type": "CAN_ACCESS", "src": decoy_target, "dst": tg, "valid_from": iso(T_inc),
-                               "valid_open_ended": True, "sources": [sid], "cost_remove": 2})
+                events.append(
+                    {
+                        "op": "assert",
+                        "at": iso(T_inc + timedelta(hours=1)),
+                        "fact_id": eid,
+                        "type": "CAN_ACCESS",
+                        "src": decoy_target,
+                        "dst": tg,
+                        "valid_from": iso(T_inc),
+                        "valid_open_ended": True,
+                        "sources": [sid],
+                        "cost_remove": 2,
+                    }
+                )
                 decoys.append(eid)
             if (sources[1], decoy_target) not in edges_seen and TYPE_MAP.get(("Host", "Service")):
                 add_edge(sources[1], decoy_target, force_true=True)
     scenario = {
-        "scenario_id": f"gen_{seed}", "title": f"Generated instance {seed}", "synthetic": True,
+        "scenario_id": f"gen_{seed}",
+        "title": f"Generated instance {seed}",
+        "synthetic": True,
         "generated": True,
-        "description": "SYNTHETIC generated benchmark instance", "clock": {"now": iso(now)},
-        "incident": {"incident_id": f"INC-GEN-{seed}", "title": "generated", "severity": "medium",
-                     "T_incident": iso(T_inc), "alerted_identity": "id:src-user", "compromised_set": sources,
-                     "targets": targets, "summary": "generated"},
-        "nodes": nodes, "sources": src_recs, "events": events, "flows": flows, "memory_seed": [],
-        "contradictions": [], "incident_evidence": [],
+        "description": "SYNTHETIC generated benchmark instance",
+        "clock": {"now": iso(now)},
+        "incident": {
+            "incident_id": f"INC-GEN-{seed}",
+            "title": "generated",
+            "severity": "medium",
+            "T_incident": iso(T_inc),
+            "alerted_identity": "id:src-user",
+            "compromised_set": sources,
+            "targets": targets,
+            "summary": "generated",
+        },
+        "nodes": nodes,
+        "sources": src_recs,
+        "events": events,
+        "flows": flows,
+        "memory_seed": [],
+        "contradictions": [],
+        "incident_evidence": [],
     }
     return Instance(seed, p, scenario, truth, decoys, decoy_target)

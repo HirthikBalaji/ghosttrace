@@ -39,8 +39,9 @@ def independent_root_count(ids: Iterable[str], sources: Mapping[str, SourceRecor
     return len(chosen)
 
 
-def policy_filter(ids: Iterable[str], sources: Mapping[str, SourceRecord], policy: TrustPolicy,
-                  falsified: frozenset[str] = frozenset()) -> list[str]:
+def policy_filter(
+    ids: Iterable[str], sources: Mapping[str, SourceRecord], policy: TrustPolicy, falsified: frozenset[str] = frozenset()
+) -> list[str]:
     out = [s for s in ids if s in sources and s not in falsified]
     if policy == TrustPolicy.TRUST_FILTERED:
         out = [s for s in out if not sources[s].attacker_influenceable]
@@ -69,8 +70,9 @@ def classify_asserted(support: list[str], sources: Mapping[str, SourceRecord]) -
     return EpistemicClass.LATENT, [Flag.WEAKLY_SUPPORTED.value]  # R1 not met
 
 
-def dispute_flags(dispute_ids: list[str], sources: Mapping[str, SourceRecord], policy: TrustPolicy,
-                  falsified: frozenset[str] = frozenset()) -> list[str]:
+def dispute_flags(
+    dispute_ids: list[str], sources: Mapping[str, SourceRecord], policy: TrustPolicy, falsified: frozenset[str] = frozenset()
+) -> list[str]:
     """R2: untrusted removal claims mark the edge disputed; the edge still counts for containment."""
     return [Flag.DISPUTED.value] if policy_filter(dispute_ids, sources, policy, falsified) else []
 

@@ -52,8 +52,13 @@ def test_grant_and_block_rules():
 
 
 def test_type_checks():
-    for at, tgt in [("disable_identity", "ws"), ("revoke_credential", "u"), ("isolate_workload", "tok"),
-                    ("pause_deployment", "svc"), ("bogus", "u")]:
+    for at, tgt in [
+        ("disable_identity", "ws"),
+        ("revoke_credential", "u"),
+        ("isolate_workload", "tok"),
+        ("pause_deployment", "svc"),
+        ("bogus", "u"),
+    ]:
         with pytest.raises(KappaError):
             kappa(at, tgt, EDGES)
 
@@ -62,4 +67,4 @@ def test_candidates_cover_relevant_subgraph_only():
     extra = EDGES + [E("x->y", "CAN_ACCESS", "x", "Identity", "y", "Service")]
     c = {a.id for a in generate_candidates(extra, ["u", "ws"], ["db"], {})}
     assert "revoke_credential:tok" in c and "disable_identity:u" in c
-    assert not any("x" == a.split(":", 1)[1] or "x->y" in a for a in c)
+    assert not any(a.split(":", 1)[1] == "x" or "x->y" in a for a in c)

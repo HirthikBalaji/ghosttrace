@@ -5,8 +5,10 @@ from __future__ import annotations
 import copy
 import json
 
+from evals.generator.generator import GenParams, generate
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
+from verifier import check
 
 from app.ingestion.ledger import Ledger
 from app.ingestion.scenario import load, read_scenario, world_from
@@ -15,9 +17,7 @@ from app.planner import engine
 from app.planner.brute import brute_force
 from app.planner.cegar import evaluate_plan, solve
 from app.reasoning.paths import INF, classify_path, reachable, reopening_distance
-from evals.generator.generator import GenParams, generate
 from tests.conftest import write_export
-from verifier import check
 
 P = TrustPolicy.CONSERVATIVE
 
@@ -106,8 +106,9 @@ def test_missing_evidence_yields_uncertainty_not_confirmation():
     for n, lab in [("s", "Identity"), ("h", "Host"), ("t", "Asset")]:
         led.add_node(Node(n, lab, "w"))
     led.add_source(SourceRecord("sig", "signed", False, "r", "high", 0, 0))
-    led.assert_edge(fact_id="a", type="CAN_ACCESS", src="s", dst="h", at=0, source_ids=["sig"], valid_from=0,
-                    valid_open_ended=True)
+    led.assert_edge(
+        fact_id="a", type="CAN_ACCESS", src="s", dst="h", at=0, source_ids=["sig"], valid_from=0, valid_open_ended=True
+    )
     led.assert_edge(fact_id="b", type="CAN_ACCESS", src="h", dst="t", at=0, source_ids=["sig"])  # no validity
     w = engine.World("w", led.all_versions(), led.sources, {}, [], ["s"], ["t"])
     edges = engine.snapshot_edges(w, 10, 10, P)
@@ -191,11 +192,20 @@ def test_exhaustive_check_independent_of_depth_bound():
         led.add_node(Node(f"n{i}", "Identity" if i < n else "Asset", "w"))
     led.add_source(SourceRecord("sig", "signed", False, "r", "high", 0, 0))
     for i in range(n):
-        led.assert_edge(fact_id=f"e{i}", type="CAN_ASSUME" if i < n - 1 else "CAN_ACCESS", src=f"n{i}", dst=f"n{i+1}",
-                        at=0, source_ids=["sig"], valid_from=0, valid_open_ended=True)
+        led.assert_edge(
+            fact_id=f"e{i}",
+            type="CAN_ASSUME" if i < n - 1 else "CAN_ACCESS",
+            src=f"n{i}",
+            dst=f"n{i + 1}",
+            at=0,
+            source_ids=["sig"],
+            valid_from=0,
+            valid_open_ended=True,
+        )
     w = engine.World("w", led.all_versions(), led.sources, {}, [], ["n0"], [f"n{n}"])
     edges = engine.snapshot_edges(w, 1, 1, P)
     from app.reasoning.paths import enumerate_paths
+
     assert enumerate_paths(edges, frozenset(), ["n0"], [f"n{n}"], max_depth=12, max_paths=10) == []
     d, wit = reopening_distance(edges, frozenset(), ["n0"], [f"n{n}"])
     assert d == 0 and len(wit) == n
@@ -211,13 +221,32 @@ def test_warm_start_equals_cold_after_new_evidence():
     _, _, warm_src = engine.plan(w, now, now, P, 1)
     # new evidence: a signed record shows dev-alice can directly assume ci-runner
     data2 = json.loads(json.dumps(data))
-    data2["sources"].append({"source_id": "src:new-edr", "system": "edr", "integrity": "signed", "root_id": "edr2",
-                             "trust_class": "high", "observed_at": "2026-03-09T00:00:00Z",
-                             "ingested_at": "2026-03-09T00:00:00Z", "content": "new"})
-    data2["events"].append({"op": "assert", "at": "2026-03-09T00:00:00Z", "fact_id": "e:dev-alice->ci-runner",
-                            "type": "CAN_ASSUME", "src": "id:dev-alice", "dst": "id:ci-runner",
-                            "valid_from": "2026-03-08T00:00:00Z", "valid_open_ended": True, "sources": ["src:new-edr"],
-                            "cost_remove": 2})
+    data2["sources"].append(
+        {
+            "source_id": "src:new-edr",
+            "system": "edr",
+            "integrity": "signed",
+            "root_id": "edr2",
+            "trust_class": "high",
+            "observed_at": "2026-03-09T00:00:00Z",
+            "ingested_at": "2026-03-09T00:00:00Z",
+            "content": "new",
+        }
+    )
+    data2["events"].append(
+        {
+            "op": "assert",
+            "at": "2026-03-09T00:00:00Z",
+            "fact_id": "e:dev-alice->ci-runner",
+            "type": "CAN_ASSUME",
+            "src": "id:dev-alice",
+            "dst": "id:ci-runner",
+            "valid_from": "2026-03-08T00:00:00Z",
+            "valid_open_ended": True,
+            "sources": ["src:new-edr"],
+            "cost_remove": 2,
+        }
+    )
     led2, meta2 = load(data2, "w")
     w2 = world_from(led2, meta2)
     for k in (0, 1, 2):
@@ -229,16 +258,17 @@ def test_warm_start_equals_cold_after_new_evidence():
 
 def test_budget_exhaustion_never_claims_optimal(world_a):
     from app.planner.cegar import Budgets
+
     now = _now(world_a)
     edges = engine.snapshot_edges(world_a, now, now, P)
     cands = engine.candidates_for(world_a, edges)
-    res = solve(edges, world_a.attack_sources, world_a.targets, world_a.flows, cands, 1,
-                Budgets(max_iterations=1))
+    res = solve(edges, world_a.attack_sources, world_a.targets, world_a.flows, cands, 1, Budgets(max_iterations=1))
     assert res.optimality != "proven_optimal"
 
 
 def test_flows_only_count_confirmed_edges():
     from app.model import SnapEdge
+
     es = [SnapEdge("a", 1, "CAN_ACCESS", "u", "v", "Service", "Service", "LATENT", "ACTIVE")]
     fl = [Flow("f", "u", "v", 100, "hard")]
     assert not reachable(es, frozenset(), "u", "v")

@@ -92,9 +92,7 @@ def kappa(action_type: str, target_id: str, edges: list[dict[str, Any]]) -> set[
         if node_types.get(target_id) != "Identity":
             raise VerificationError(f"disable_identity target {target_id} is not an Identity")
         return {
-            e["edge_id"]
-            for e in edges
-            if e["src"] == target_id or (e["dst"] == target_id and e["type"] == "AUTHENTICATES_AS")
+            e["edge_id"] for e in edges if e["src"] == target_id or (e["dst"] == target_id and e["type"] == "AUTHENTICATES_AS")
         }
     if action_type == "revoke_credential":
         if node_types.get(target_id) != "Credential":
@@ -122,8 +120,7 @@ def _weight(e: dict[str, Any]) -> int:
     return 0 if e["cls"] in CONFIRMED_CLASSES and e["temporal"] == "ACTIVE" else 1
 
 
-def reopening_distance(edges: list[dict[str, Any]], removed: set[str], sources: list[str],
-                       targets: list[str]) -> float:
+def reopening_distance(edges: list[dict[str, Any]], removed: set[str], sources: list[str], targets: list[str]) -> float:
     """0-1 BFS: minimum number of non-confirmed edges on any surviving source->target path."""
     adj: dict[str, list[tuple[str, int]]] = {}
     for e in edges:
@@ -162,8 +159,9 @@ def confirmed_reachable(edges: list[dict[str, Any]], removed: set[str], u: str, 
     return False
 
 
-def _check_path(path: list[str], by_id: dict[str, dict[str, Any]], removed: set[str], sources: set[str],
-                targets: set[str]) -> int:
+def _check_path(
+    path: list[str], by_id: dict[str, dict[str, Any]], removed: set[str], sources: set[str], targets: set[str]
+) -> int:
     if not path:
         raise VerificationError("empty path")
     cur = None
@@ -205,9 +203,23 @@ def _check(cert: dict[str, Any], export_path: str) -> list[str]:
     errors: list[str] = []
     if cert.get("schema_version") != SCHEMA_VERSION:
         raise VerificationError(f"unknown schema_version {cert.get('schema_version')!r}")
-    for key in ("certificate_id", "workspace_id", "world_time_T", "knowledge_time_tau", "snapshot_hash",
-                "sources", "targets", "trust_policy", "actions", "status", "robustness", "flows", "cost",
-                "optimality", "mode"):
+    for key in (
+        "certificate_id",
+        "workspace_id",
+        "world_time_T",
+        "knowledge_time_tau",
+        "snapshot_hash",
+        "sources",
+        "targets",
+        "trust_policy",
+        "actions",
+        "status",
+        "robustness",
+        "flows",
+        "cost",
+        "optimality",
+        "mode",
+    ):
         if key not in cert:
             raise VerificationError(f"missing field {key}")
     if cert["mode"] != "simulated":
@@ -218,8 +230,12 @@ def _check(cert: dict[str, Any], export_path: str) -> list[str]:
         raise VerificationError("export schema_version mismatch")
     if snapshot_hash(header, edges, costs) != cert["snapshot_hash"]:
         errors.append("snapshot_hash does not match the recomputed hash of the export")
-    for ck, hk in (("workspace_id", "workspace_id"), ("world_time_T", "T"), ("knowledge_time_tau", "tau"),
-                   ("trust_policy", "trust_policy")):
+    for ck, hk in (
+        ("workspace_id", "workspace_id"),
+        ("world_time_T", "T"),
+        ("knowledge_time_tau", "tau"),
+        ("trust_policy", "trust_policy"),
+    ):
         if cert[ck] != header[hk]:
             errors.append(f"{ck} in certificate ({cert[ck]!r}) differs from export ({header[hk]!r})")
     if sorted(cert["sources"]) != sorted(header["sources"]) or sorted(cert["targets"]) != sorted(header["targets"]):
@@ -275,8 +291,11 @@ def _check(cert: dict[str, Any], export_path: str) -> list[str]:
     claimed_d = rob.get("min_reopening_latent_edges")
     if (INF if claimed_d is None else claimed_d) != d:
         errors.append(f"min_reopening_latent_edges {claimed_d} != recomputed {None if d == INF else int(d)}")
-    if status == "contained" and not (rob["k_certified"] < d):
-        errors.append(f"k_certified {rob['k_certified']} is not < reopening distance")
+    if status == "contained":
+        # canonical: d-1 when finite; when no path survives at all, the number of non-confirmed edges
+        canon = int(d) - 1 if d != INF else sum(1 for e in edges if _weight(e) == 1)
+        if rob["k_certified"] != canon:
+            errors.append(f"k_certified {rob['k_certified']} != canonical {canon} for reopening distance")
     for p in rob.get("witness_paths", []):
         try:
             if _check_path(p, by_id, removed, set(sources), set(targets)) != d:
@@ -325,8 +344,9 @@ def _check(cert: dict[str, Any], export_path: str) -> list[str]:
     return [e for e in errors if not e.startswith("note:")]
 
 
-def brute_force_optimum(header: dict[str, Any], edges: list[dict[str, Any]], costs: list[dict[str, Any]],
-                        k_target: int) -> int | None:
+def brute_force_optimum(
+    header: dict[str, Any], edges: list[dict[str, Any]], costs: list[dict[str, Any]], k_target: int
+) -> int | None:
     """Exhaustive minimum of J over all candidate subsets with d > k_target and hard flows preserved."""
     cands = [(c["action_id"], c["action_type"], c["target_id"], int(c["cost"])) for c in costs]
     kappas = [kappa(t, tid, edges) for _, t, tid, _ in cands]

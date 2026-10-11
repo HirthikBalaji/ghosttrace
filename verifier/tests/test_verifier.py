@@ -41,6 +41,7 @@ def _m(f):
         c = copy.deepcopy(c)
         f(c, lines)
         return c
+
     return apply
 
 
@@ -129,12 +130,25 @@ def _bad_witness(c, _):
 
 
 MUTATIONS = {
-    "drop_removed_edge": _drop_removed, "swap_action_target": _swap_target, "swap_action_id": _swap_action_id,
-    "flip_flow": _flip_flow, "flow_kind": _flow_kind, "alter_total_cost": _alter_total,
-    "alter_action_cost": _alter_action_cost, "change_T": _change_T, "change_tau": _change_tau,
-    "change_hash": _change_hash, "inflate_k": _inflate_k, "hide_reopening": _hide_reopening,
-    "drop_action": _drop_action, "change_policy": _policy, "unknown_schema": _schema, "mode_executed": _executed,
-    "fake_cost_penalty": _fake_optimal_total, "change_sources": _sources, "bad_witness": _bad_witness,
+    "drop_removed_edge": _drop_removed,
+    "swap_action_target": _swap_target,
+    "swap_action_id": _swap_action_id,
+    "flip_flow": _flip_flow,
+    "flow_kind": _flow_kind,
+    "alter_total_cost": _alter_total,
+    "alter_action_cost": _alter_action_cost,
+    "change_T": _change_T,
+    "change_tau": _change_tau,
+    "change_hash": _change_hash,
+    "inflate_k": _inflate_k,
+    "hide_reopening": _hide_reopening,
+    "drop_action": _drop_action,
+    "change_policy": _policy,
+    "unknown_schema": _schema,
+    "mode_executed": _executed,
+    "fake_cost_penalty": _fake_optimal_total,
+    "change_sources": _sources,
+    "bad_witness": _bad_witness,
 }
 
 
@@ -155,8 +169,9 @@ def test_every_mutation_rejected(cert_and_export, record_property):
     rate = killed / len(MUTATIONS)
     record_property("mutation_kill_rate", rate)
     (ROOT / ".artifacts").mkdir(exist_ok=True)
-    (ROOT / ".artifacts" / "mutation_kill_rate.json").write_text(json.dumps(
-        {"killed": killed, "total": len(MUTATIONS), "rate": rate, "survivors": survivors}))
+    (ROOT / ".artifacts" / "mutation_kill_rate.json").write_text(
+        json.dumps({"killed": killed, "total": len(MUTATIONS), "rate": rate, "survivors": survivors})
+    )
     assert survivors == [], survivors
 
 
@@ -185,14 +200,16 @@ def test_cli_exit_codes(cert_and_export, tmp_path):
     cert, path, _ = cert_and_export[0]
     cp = tmp_path / "c.json"
     cp.write_text(json.dumps(cert))
-    ok = subprocess.run([sys.executable, "-m", "verifier", "check", str(cp), path], cwd=ROOT, capture_output=True,
-                        text=True, check=False)
+    ok = subprocess.run(
+        [sys.executable, "-m", "verifier", "check", str(cp), path], cwd=ROOT, capture_output=True, text=True, check=False
+    )
     assert ok.returncode == 0 and "ACCEPTED" in ok.stdout
     bad = copy.deepcopy(cert)
     bad["cost"]["total"] += 7
     cp.write_text(json.dumps(bad))
-    r = subprocess.run([sys.executable, "-m", "verifier", "check", str(cp), path], cwd=ROOT, capture_output=True,
-                       text=True, check=False)
+    r = subprocess.run(
+        [sys.executable, "-m", "verifier", "check", str(cp), path], cwd=ROOT, capture_output=True, text=True, check=False
+    )
     assert r.returncode == 1 and "REJECTED" in r.stdout
 
 

@@ -1,0 +1,1371 @@
+{
+ "environment": {
+  "python": "3.12.14",
+  "platform": "macOS-27.0-arm64-arm-64bit",
+  "machine": "arm64",
+  "processor": "arm",
+  "falkordb_client": "1.7.1 (pinned)",
+  "falkordb_server": "falkordb/falkordb:v4.22.0",
+  "provider": "mock (deterministic)",
+  "wall_s": 115.6,
+  "instances_per_family": 100
+ },
+ "families": [
+  {
+   "family": "small",
+   "params": {
+    "n_mid": 6,
+    "n_paths": 2,
+    "branching": 1.2,
+    "latent_density": 0.12,
+    "p_latent_true": 0.3,
+    "decoy": true,
+    "churn": true,
+    "n_hard": 1,
+    "n_soft": 2,
+    "ai_frac": 0.08,
+    "weak_frac": 0.08,
+    "hidden_unmodeled": 1,
+    "n_targets": 1
+   },
+   "seeds": [
+    0,
+    99
+   ],
+   "instances": 100,
+   "methods": {
+    "B0": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 87,
+      "n": 100,
+      "rate": 0.87,
+      "ci95": [
+       0.79,
+       0.922
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 91,
+      "n": 100,
+      "rate": 0.91,
+      "ci95": [
+       0.838,
+       0.952
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "mean_J_true": 2.31,
+     "evidence_attack_success": {
+      "k": 1,
+      "n": 67,
+      "rate": 0.014925373134328358,
+      "ci95": [
+       0.003,
+       0.08
+      ]
+     },
+     "disruption_regret": {
+      "n": 13,
+      "mean": 0.846,
+      "max": 3
+     }
+    },
+    "B1": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 17,
+      "n": 100,
+      "rate": 0.17,
+      "ci95": [
+       0.109,
+       0.255
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 26,
+      "n": 100,
+      "rate": 0.26,
+      "ci95": [
+       0.184,
+       0.354
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 62,
+      "n": 100,
+      "rate": 0.62,
+      "ci95": [
+       0.522,
+       0.709
+      ]
+     },
+     "mean_J_true": 21.94,
+     "evidence_attack_success": {
+      "k": 12,
+      "n": 67,
+      "rate": 0.1791044776119403,
+      "ci95": [
+       0.106,
+       0.287
+      ]
+     },
+     "disruption_regret": {
+      "n": 24,
+      "mean": 11.417,
+      "max": 32
+     }
+    },
+    "B2": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 34,
+      "n": 100,
+      "rate": 0.34,
+      "ci95": [
+       0.255,
+       0.437
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 46,
+      "n": 100,
+      "rate": 0.46,
+      "ci95": [
+       0.366,
+       0.557
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 15,
+      "n": 100,
+      "rate": 0.15,
+      "ci95": [
+       0.093,
+       0.233
+      ]
+     },
+     "mean_J_true": 5.65,
+     "evidence_attack_success": {
+      "k": 34,
+      "n": 67,
+      "rate": 0.5074626865671642,
+      "ci95": [
+       0.391,
+       0.623
+      ]
+     },
+     "disruption_regret": {
+      "n": 40,
+      "mean": 1.925,
+      "max": 8
+     }
+    },
+    "B3": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 75,
+      "n": 100,
+      "rate": 0.75,
+      "ci95": [
+       0.657,
+       0.825
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 79,
+      "n": 100,
+      "rate": 0.79,
+      "ci95": [
+       0.7,
+       0.858
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 14,
+      "n": 100,
+      "rate": 0.14,
+      "ci95": [
+       0.085,
+       0.221
+      ]
+     },
+     "mean_J_true": 7.6,
+     "evidence_attack_success": {
+      "k": 28,
+      "n": 67,
+      "rate": 0.417910447761194,
+      "ci95": [
+       0.307,
+       0.537
+      ]
+     },
+     "disruption_regret": {
+      "n": 14,
+      "mean": 5.429,
+      "max": 17
+     }
+    },
+    "GT_k0": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 18,
+      "n": 100,
+      "rate": 0.18,
+      "ci95": [
+       0.117,
+       0.267
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 32,
+      "n": 100,
+      "rate": 0.32,
+      "ci95": [
+       0.237,
+       0.417
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "mean_J_true": 5.15,
+     "evidence_attack_success": {
+      "k": 0,
+      "n": 67,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.054
+      ]
+     },
+     "disruption_regret": {
+      "n": 62,
+      "mean": 0,
+      "max": 0
+     }
+    },
+    "GT_k1": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 12,
+      "n": 100,
+      "rate": 0.12,
+      "ci95": [
+       0.07,
+       0.198
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "mean_J_true": 7.03,
+     "evidence_attack_success": {
+      "k": 0,
+      "n": 67,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.054
+      ]
+     },
+     "disruption_regret": {
+      "n": 62,
+      "mean": 2.032,
+      "max": 8
+     }
+    },
+    "GT_k2": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 11,
+      "n": 100,
+      "rate": 0.11,
+      "ci95": [
+       0.063,
+       0.186
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "mean_J_true": 7.21,
+     "evidence_attack_success": {
+      "k": 0,
+      "n": 67,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.054
+      ]
+     },
+     "disruption_regret": {
+      "n": 62,
+      "mean": 2.258,
+      "max": 8
+     }
+    }
+   },
+   "soundness": {
+    "certificates": 300,
+    "violations": 0
+   },
+   "verifier": {
+    "checked": 300,
+    "accepted": 300
+   },
+   "robustness_calibration": {
+    "1": {
+     "k": 18,
+     "n": 62,
+     "rate": 0.2903225806451613,
+     "ci95": [
+      0.192,
+      0.413
+     ]
+    },
+    "2": {
+     "k": 0,
+     "n": 11,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.259
+     ]
+    },
+    "inf": {
+     "k": 0,
+     "n": 227,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.017
+     ]
+    }
+   },
+   "temporal_r2_correctness": {
+    "k": 79,
+    "n": 79,
+    "rate": 1.0,
+    "ci95": [
+     0.954,
+     1.0
+    ]
+   },
+   "citation_resolution": {
+    "k": 963,
+    "n": 963,
+    "rate": 1.0,
+    "ci95": [
+     0.996,
+     1.0
+    ]
+   },
+   "mutation": {
+    "applied": 268,
+    "killed": 268,
+    "equivalent_identical": 7,
+    "not_applicable": 10
+   },
+   "solver_ms": {
+    "median": 0.41,
+    "p95": 1.06,
+    "samples": 300
+   },
+   "failures": []
+  },
+  {
+   "family": "default",
+   "params": {
+    "n_mid": 10,
+    "n_paths": 2,
+    "branching": 1.2,
+    "latent_density": 0.12,
+    "p_latent_true": 0.3,
+    "decoy": true,
+    "churn": true,
+    "n_hard": 2,
+    "n_soft": 2,
+    "ai_frac": 0.08,
+    "weak_frac": 0.08,
+    "hidden_unmodeled": 1,
+    "n_targets": 1
+   },
+   "seeds": [
+    1000,
+    1099
+   ],
+   "instances": 100,
+   "methods": {
+    "B0": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 85,
+      "n": 100,
+      "rate": 0.85,
+      "ci95": [
+       0.767,
+       0.907
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 86,
+      "n": 100,
+      "rate": 0.86,
+      "ci95": [
+       0.779,
+       0.915
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "mean_J_true": 2.42,
+     "evidence_attack_success": {
+      "k": 2,
+      "n": 79,
+      "rate": 0.02531645569620253,
+      "ci95": [
+       0.007,
+       0.088
+      ]
+     },
+     "disruption_regret": null
+    },
+    "B1": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 25,
+      "n": 100,
+      "rate": 0.25,
+      "ci95": [
+       0.175,
+       0.343
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 27,
+      "n": 100,
+      "rate": 0.27,
+      "ci95": [
+       0.193,
+       0.364
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 68,
+      "n": 100,
+      "rate": 0.68,
+      "ci95": [
+       0.583,
+       0.763
+      ]
+     },
+     "mean_J_true": 19.94,
+     "evidence_attack_success": {
+      "k": 17,
+      "n": 79,
+      "rate": 0.21518987341772153,
+      "ci95": [
+       0.139,
+       0.318
+      ]
+     },
+     "disruption_regret": null
+    },
+    "B2": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 46,
+      "n": 100,
+      "rate": 0.46,
+      "ci95": [
+       0.366,
+       0.557
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 50,
+      "n": 100,
+      "rate": 0.5,
+      "ci95": [
+       0.404,
+       0.596
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 21,
+      "n": 100,
+      "rate": 0.21,
+      "ci95": [
+       0.142,
+       0.3
+      ]
+     },
+     "mean_J_true": 4.69,
+     "evidence_attack_success": {
+      "k": 40,
+      "n": 79,
+      "rate": 0.5063291139240507,
+      "ci95": [
+       0.398,
+       0.614
+      ]
+     },
+     "disruption_regret": null
+    },
+    "B3": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 75,
+      "n": 100,
+      "rate": 0.75,
+      "ci95": [
+       0.657,
+       0.825
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 76,
+      "n": 100,
+      "rate": 0.76,
+      "ci95": [
+       0.668,
+       0.833
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 21,
+      "n": 100,
+      "rate": 0.21,
+      "ci95": [
+       0.142,
+       0.3
+      ]
+     },
+     "mean_J_true": 8.66,
+     "evidence_attack_success": {
+      "k": 40,
+      "n": 79,
+      "rate": 0.5063291139240507,
+      "ci95": [
+       0.398,
+       0.614
+      ]
+     },
+     "disruption_regret": null
+    },
+    "GT_k0": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 23,
+      "n": 100,
+      "rate": 0.23,
+      "ci95": [
+       0.158,
+       0.322
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 29,
+      "n": 100,
+      "rate": 0.29,
+      "ci95": [
+       0.21,
+       0.385
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "mean_J_true": 4.8,
+     "evidence_attack_success": {
+      "k": 0,
+      "n": 79,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.046
+      ]
+     },
+     "disruption_regret": null
+    },
+    "GT_k1": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 1,
+      "n": 100,
+      "rate": 0.01,
+      "ci95": [
+       0.002,
+       0.054
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 6,
+      "n": 100,
+      "rate": 0.06,
+      "ci95": [
+       0.028,
+       0.125
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "mean_J_true": 7.36,
+     "evidence_attack_success": {
+      "k": 0,
+      "n": 79,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.046
+      ]
+     },
+     "disruption_regret": null
+    },
+    "GT_k2": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 5,
+      "n": 100,
+      "rate": 0.05,
+      "ci95": [
+       0.022,
+       0.112
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "mean_J_true": 7.8,
+     "evidence_attack_success": {
+      "k": 0,
+      "n": 79,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.046
+      ]
+     },
+     "disruption_regret": null
+    }
+   },
+   "soundness": {
+    "certificates": 300,
+    "violations": 0
+   },
+   "verifier": {
+    "checked": 300,
+    "accepted": 300
+   },
+   "robustness_calibration": {
+    "1": {
+     "k": 23,
+     "n": 69,
+     "rate": 0.3333333333333333,
+     "ci95": [
+      0.234,
+      0.451
+     ]
+    },
+    "2": {
+     "k": 1,
+     "n": 19,
+     "rate": 0.05263157894736842,
+     "ci95": [
+      0.009,
+      0.246
+     ]
+    },
+    "3": {
+     "k": 0,
+     "n": 2,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.658
+     ]
+    },
+    "inf": {
+     "k": 0,
+     "n": 210,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.018
+     ]
+    }
+   },
+   "temporal_r2_correctness": {
+    "k": 124,
+    "n": 124,
+    "rate": 1.0,
+    "ci95": [
+     0.97,
+     1.0
+    ]
+   },
+   "citation_resolution": {
+    "k": 1100,
+    "n": 1100,
+    "rate": 1.0,
+    "ci95": [
+     0.997,
+     1.0
+    ]
+   },
+   "mutation": {
+    "applied": 272,
+    "killed": 272,
+    "equivalent_identical": 5,
+    "not_applicable": 8
+   },
+   "solver_ms": {
+    "median": 0.72,
+    "p95": 2.16,
+    "samples": 300
+   },
+   "failures": []
+  },
+  {
+   "family": "adversarial",
+   "params": {
+    "n_mid": 10,
+    "n_paths": 2,
+    "branching": 1.2,
+    "latent_density": 0.12,
+    "p_latent_true": 0.3,
+    "decoy": true,
+    "churn": true,
+    "n_hard": 2,
+    "n_soft": 2,
+    "ai_frac": 0.2,
+    "weak_frac": 0.1,
+    "hidden_unmodeled": 1,
+    "n_targets": 1
+   },
+   "seeds": [
+    2000,
+    2099
+   ],
+   "instances": 100,
+   "methods": {
+    "B0": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 86,
+      "n": 100,
+      "rate": 0.86,
+      "ci95": [
+       0.779,
+       0.915
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 87,
+      "n": 100,
+      "rate": 0.87,
+      "ci95": [
+       0.79,
+       0.922
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "mean_J_true": 2.31,
+     "evidence_attack_success": {
+      "k": 7,
+      "n": 90,
+      "rate": 0.07777777777777778,
+      "ci95": [
+       0.038,
+       0.152
+      ]
+     },
+     "disruption_regret": null
+    },
+    "B1": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 22,
+      "n": 100,
+      "rate": 0.22,
+      "ci95": [
+       0.15,
+       0.311
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 23,
+      "n": 100,
+      "rate": 0.23,
+      "ci95": [
+       0.158,
+       0.322
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 75,
+      "n": 100,
+      "rate": 0.75,
+      "ci95": [
+       0.657,
+       0.825
+      ]
+     },
+     "mean_J_true": 23.78,
+     "evidence_attack_success": {
+      "k": 17,
+      "n": 90,
+      "rate": 0.18888888888888888,
+      "ci95": [
+       0.121,
+       0.282
+      ]
+     },
+     "disruption_regret": null
+    },
+    "B2": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 34,
+      "n": 100,
+      "rate": 0.34,
+      "ci95": [
+       0.255,
+       0.437
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 41,
+      "n": 100,
+      "rate": 0.41,
+      "ci95": [
+       0.319,
+       0.508
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 22,
+      "n": 100,
+      "rate": 0.22,
+      "ci95": [
+       0.15,
+       0.311
+      ]
+     },
+     "mean_J_true": 5.57,
+     "evidence_attack_success": {
+      "k": 41,
+      "n": 90,
+      "rate": 0.45555555555555555,
+      "ci95": [
+       0.357,
+       0.558
+      ]
+     },
+     "disruption_regret": null
+    },
+    "B3": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 70,
+      "n": 100,
+      "rate": 0.7,
+      "ci95": [
+       0.604,
+       0.781
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 70,
+      "n": 100,
+      "rate": 0.7,
+      "ci95": [
+       0.604,
+       0.781
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 28,
+      "n": 100,
+      "rate": 0.28,
+      "ci95": [
+       0.201,
+       0.375
+      ]
+     },
+     "mean_J_true": 10.48,
+     "evidence_attack_success": {
+      "k": 43,
+      "n": 90,
+      "rate": 0.4777777777777778,
+      "ci95": [
+       0.378,
+       0.58
+      ]
+     },
+     "disruption_regret": null
+    },
+    "GT_k0": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 19,
+      "n": 100,
+      "rate": 0.19,
+      "ci95": [
+       0.125,
+       0.278
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 28,
+      "n": 100,
+      "rate": 0.28,
+      "ci95": [
+       0.201,
+       0.375
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "mean_J_true": 5.18,
+     "evidence_attack_success": {
+      "k": 0,
+      "n": 90,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.041
+      ]
+     },
+     "disruption_regret": null
+    },
+    "GT_k1": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 6,
+      "n": 100,
+      "rate": 0.06,
+      "ci95": [
+       0.028,
+       0.125
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "mean_J_true": 7.43,
+     "evidence_attack_success": {
+      "k": 0,
+      "n": 90,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.041
+      ]
+     },
+     "disruption_regret": null
+    },
+    "GT_k2": {
+     "plans_evaluated": 100,
+     "infeasible": 0,
+     "residual_exposure_modeled": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "residual_exposure_incl_unmodeled": {
+      "k": 4,
+      "n": 100,
+      "rate": 0.04,
+      "ci95": [
+       0.016,
+       0.098
+      ]
+     },
+     "hard_flow_broken": {
+      "k": 0,
+      "n": 100,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.037
+      ]
+     },
+     "mean_J_true": 7.68,
+     "evidence_attack_success": {
+      "k": 0,
+      "n": 90,
+      "rate": 0.0,
+      "ci95": [
+       0.0,
+       0.041
+      ]
+     },
+     "disruption_regret": null
+    }
+   },
+   "soundness": {
+    "certificates": 300,
+    "violations": 0
+   },
+   "verifier": {
+    "checked": 300,
+    "accepted": 300
+   },
+   "robustness_calibration": {
+    "1": {
+     "k": 19,
+     "n": 67,
+     "rate": 0.2835820895522388,
+     "ci95": [
+      0.19,
+      0.401
+     ]
+    },
+    "2": {
+     "k": 0,
+     "n": 18,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.176
+     ]
+    },
+    "3": {
+     "k": 0,
+     "n": 5,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.434
+     ]
+    },
+    "inf": {
+     "k": 0,
+     "n": 210,
+     "rate": 0.0,
+     "ci95": [
+      0.0,
+      0.018
+     ]
+    }
+   },
+   "temporal_r2_correctness": {
+    "k": 124,
+    "n": 124,
+    "rate": 1.0,
+    "ci95": [
+     0.97,
+     1.0
+    ]
+   },
+   "citation_resolution": {
+    "k": 1030,
+    "n": 1030,
+    "rate": 1.0,
+    "ci95": [
+     0.996,
+     1.0
+    ]
+   },
+   "mutation": {
+    "applied": 281,
+    "killed": 281,
+    "equivalent_identical": 2,
+    "not_applicable": 2
+   },
+   "solver_ms": {
+    "median": 0.7,
+    "p95": 1.88,
+    "samples": 300
+   },
+   "failures": []
+  }
+ ],
+ "scaling": [
+  {
+   "n_mid": 10,
+   "mean_edge_versions": 19.2,
+   "plan_k1_ms": {
+    "median": 0.59,
+    "p95": 1.02,
+    "samples": 5
+   },
+   "replan_cold_ms": {
+    "median": 0.59,
+    "p95": 0.91,
+    "samples": 5
+   },
+   "replan_warm_ms": {
+    "median": 0.47,
+    "p95": 0.75,
+    "samples": 5
+   },
+   "speedup_median": 1.25,
+   "falkordb_active_snapshot_ms": {
+    "median": 2.15,
+    "p95": 2.54,
+    "samples": 15
+   },
+   "falkordb_path_enum_depth6_ms": {
+    "median": 1.01,
+    "p95": 1.32,
+    "samples": 15
+   }
+  },
+  {
+   "n_mid": 20,
+   "mean_edge_versions": 44.4,
+   "plan_k1_ms": {
+    "median": 2.07,
+    "p95": 2.32,
+    "samples": 5
+   },
+   "replan_cold_ms": {
+    "median": 1.84,
+    "p95": 2.33,
+    "samples": 5
+   },
+   "replan_warm_ms": {
+    "median": 1.41,
+    "p95": 2.83,
+    "samples": 5
+   },
+   "speedup_median": 1.31,
+   "falkordb_active_snapshot_ms": {
+    "median": 4.14,
+    "p95": 5.05,
+    "samples": 15
+   },
+   "falkordb_path_enum_depth6_ms": {
+    "median": 1.23,
+    "p95": 2.0,
+    "samples": 15
+   }
+  },
+  {
+   "n_mid": 40,
+   "mean_edge_versions": 133.4,
+   "plan_k1_ms": {
+    "median": 7.31,
+    "p95": 10.36,
+    "samples": 5
+   },
+   "replan_cold_ms": {
+    "median": 7.4,
+    "p95": 8.36,
+    "samples": 5
+   },
+   "replan_warm_ms": {
+    "median": 5.68,
+    "p95": 6.0,
+    "samples": 5
+   },
+   "speedup_median": 1.3,
+   "falkordb_active_snapshot_ms": {
+    "median": 11.57,
+    "p95": 13.2,
+    "samples": 15
+   },
+   "falkordb_path_enum_depth6_ms": {
+    "median": 17.02,
+    "p95": 24.07,
+    "samples": 15
+   }
+  },
+  {
+   "n_mid": 80,
+   "mean_edge_versions": 423.8,
+   "plan_k1_ms": {
+    "median": 21.8,
+    "p95": 28.96,
+    "samples": 5
+   },
+   "replan_cold_ms": {
+    "median": 18.27,
+    "p95": 21.88,
+    "samples": 5
+   },
+   "replan_warm_ms": {
+    "median": 16.02,
+    "p95": 23.96,
+    "samples": 5
+   },
+   "speedup_median": 1.14,
+   "falkordb_active_snapshot_ms": {
+    "median": 35.17,
+    "p95": 45.45,
+    "samples": 15
+   },
+   "falkordb_path_enum_depth6_ms": {
+    "median": 31.78,
+    "p95": 40.12,
+    "samples": 15
+   }
+  },
+  {
+   "n_mid": 160,
+   "mean_edge_versions": 1456.8,
+   "plan_k1_ms": {
+    "median": 129.42,
+    "p95": 130.59,
+    "samples": 5
+   },
+   "replan_cold_ms": {
+    "median": 116.61,
+    "p95": 124.45,
+    "samples": 5
+   },
+   "replan_warm_ms": {
+    "median": 107.44,
+    "p95": 112.37,
+    "samples": 5
+   },
+   "speedup_median": 1.09,
+   "falkordb_active_snapshot_ms": {
+    "median": 125.41,
+    "p95": 129.4,
+    "samples": 15
+   },
+   "falkordb_path_enum_depth6_ms": {
+    "median": 53.45,
+    "p95": 63.95,
+    "samples": 15
+   }
+  }
+ ]
+}

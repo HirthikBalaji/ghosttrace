@@ -61,8 +61,9 @@ def test_r2_untrusted_removal_disputes_not_removes():
         led.add_node(Node(n, lab, "w"))
     for s in SRC.values():
         led.add_source(s)
-    led.assert_edge(fact_id="e", type="HAS_CREDENTIAL", src="h", dst="c", at=10, source_ids=["signed"], valid_from=0,
-                    valid_open_ended=True)
+    led.assert_edge(
+        fact_id="e", type="HAS_CREDENTIAL", src="h", dst="c", at=10, source_ids=["signed"], valid_from=0, valid_open_ended=True
+    )
     assert led.remove_edge(fact_id="e", removed_at=50, at=60, source_ids=["ai1"]) == "disputed"
     snap = build_snapshot(led.all_versions(), led.sources, 100, 100, TrustPolicy.CONSERVATIVE)
     assert "e" in snap and Flag.DISPUTED.value in snap["e"].flags and snap["e"].confirmed
@@ -120,5 +121,4 @@ def test_r5_load_bearing_evidence(world_a):
     # each reported set really invalidates; a non-reported record does not
     for s, _why in lb.items():
         assert engine._claims_hold(world_a, now, now, TrustPolicy.CONSERVATIVE, res, cert, frozenset(s)) is not None
-    assert engine._claims_hold(world_a, now, now, TrustPolicy.CONSERVATIVE, res, cert,
-                               frozenset({"src:wiki-owner"})) is None
+    assert engine._claims_hold(world_a, now, now, TrustPolicy.CONSERVATIVE, res, cert, frozenset({"src:wiki-owner"})) is None

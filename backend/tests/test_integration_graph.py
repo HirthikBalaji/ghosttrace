@@ -6,13 +6,14 @@ from __future__ import annotations
 import itertools
 
 import pytest
+from evals.generator.generator import GenParams, generate
 
 from app.graph import queries as Q
 from app.graph.client import GraphClient, WorkspaceError, graph_key
 from app.graph.repository import Repository
 from app.graph.schema import CURRENT_SCHEMA_VERSION, current_version, migrate
 from app.ingestion.ledger import Ledger
-from app.ingestion.scenario import ScenarioMeta, load, read_scenario
+from app.ingestion.scenario import ScenarioMeta, load
 from app.ingestion.seed import cypher_precondition, seed
 from app.model import Flow, Node, SourceRecord, TrustPolicy
 from app.planner import engine
@@ -20,7 +21,6 @@ from app.reasoning.latent import TEMPLATES, check_preconditions_py
 from app.reasoning.paths import enumerate_paths, reopening_distance
 from app.reasoning.snapshot import build_snapshot
 from app.temporal.predicate import TemporalStatus, parse_iso, temporal_status
-from evals.generator.generator import GenParams, generate
 
 pytestmark = pytest.mark.integration
 
@@ -48,19 +48,33 @@ def test_seed_is_idempotent_and_reproducible(falkor: GraphClient, ws: str):
 def test_world_roundtrip_matches_ledger(falkor: GraphClient, ws: str, world_a):
     seed(falkor, ws, "ghost_credential_a")
     w = Repository(falkor, ws).world()
-    key = lambda v: (v.edge_id, v.version, v.tx_from, v.tx_to, v.valid_from, v.valid_to, v.validity_unknown,  # noqa: E731
-                     tuple(v.source_ids), tuple(v.dispute_source_ids), v.kind)
+    key = lambda v: (  # noqa: E731
+        v.edge_id,
+        v.version,
+        v.tx_from,
+        v.tx_to,
+        v.valid_from,
+        v.valid_to,
+        v.validity_unknown,  # noqa: E731
+        tuple(v.source_ids),
+        tuple(v.dispute_source_ids),
+        v.kind,
+    )
     assert sorted(map(key, w.versions)) == sorted(map(key, world_a.versions))
     now = world_a.meta["now"]
-    assert engine.pareto_points(engine.pareto(w, now, now, TrustPolicy.CONSERVATIVE, 2)) == \
-        engine.pareto_points(engine.pareto(world_a, now, now, TrustPolicy.CONSERVATIVE, 2))
+    assert engine.pareto_points(engine.pareto(w, now, now, TrustPolicy.CONSERVATIVE, 2)) == engine.pareto_points(
+        engine.pareto(world_a, now, now, TrustPolicy.CONSERVATIVE, 2)
+    )
 
 
 def test_cypher_temporal_predicate_equals_python(falkor: GraphClient, ws: str, world_a):
     seed(falkor, ws, "ghost_credential_a")
     repo = Repository(falkor, ws)
-    points = sorted({v.tx_from for v in world_a.versions} | {v.valid_from or 0 for v in world_a.versions}
-                    | {v.valid_to or 0 for v in world_a.versions})
+    points = sorted(
+        {v.tx_from for v in world_a.versions}
+        | {v.valid_from or 0 for v in world_a.versions}
+        | {v.valid_to or 0 for v in world_a.versions}
+    )
     probes = [p + d for p in points[::2] for d in (-1, 0, 1)]
     checked = 0
     for T, tau in itertools.islice(itertools.product(probes, probes), 0, None, 7):
@@ -78,6 +92,7 @@ def test_cypher_temporal_predicate_equals_python(falkor: GraphClient, ws: str, w
 def test_backfill_ownership_as_known_then_vs_now(falkor: GraphClient, ws: str):
     from app.agents.brain import CompanyBrain
     from app.agents.schemas import BrainQuery
+
     seed(falkor, ws, "ghost_credential_a")
     repo = Repository(falkor, ws)
     T = parse_iso("2026-03-02T09:00:00Z")
@@ -95,8 +110,11 @@ def _differential(falkor, ws, w, T, tau, depth):
     repo = Repository(falkor, ws)
     edges = engine.snapshot_edges(w, T, tau, TrustPolicy.CONSERVATIVE)
     allowed = [e.edge_id for e in edges]
-    cy = {tuple(e) for e, n in repo.find_paths_cypher(w.attack_sources, w.targets, allowed, T, tau, depth, 2000)
-          if len(set(n)) == len(n)}
+    cy = {
+        tuple(e)
+        for e, n in repo.find_paths_cypher(w.attack_sources, w.targets, allowed, T, tau, depth, 2000)
+        if len(set(n)) == len(n)
+    }
     py = {p.edge_ids for p in enumerate_paths(edges, frozenset(), w.attack_sources, w.targets, depth, 100000)}
     return cy, py
 
@@ -111,6 +129,7 @@ def test_differential_paths_scenario_a(falkor: GraphClient, ws: str, world_a):
 
 def test_differential_paths_generated(falkor: GraphClient):
     from app.ingestion.scenario import world_from
+
     agree = 0
     for seed_ in range(12):
         inst = generate(seed_, GenParams(n_mid=8))
@@ -125,10 +144,12 @@ def test_differential_paths_generated(falkor: GraphClient):
         assert cy == py, seed_
         # reachability verdict (exhaustive) on the DB-loaded world equals the in-memory reference
         w_db = repo.world()
-        d1, _ = reopening_distance(engine.snapshot_edges(w_db, now, now, TrustPolicy.CONSERVATIVE), frozenset(),
-                                   w.attack_sources, w.targets)
-        d2, _ = reopening_distance(engine.snapshot_edges(w, now, now, TrustPolicy.CONSERVATIVE), frozenset(),
-                                   w.attack_sources, w.targets)
+        d1, _ = reopening_distance(
+            engine.snapshot_edges(w_db, now, now, TrustPolicy.CONSERVATIVE), frozenset(), w.attack_sources, w.targets
+        )
+        d2, _ = reopening_distance(
+            engine.snapshot_edges(w, now, now, TrustPolicy.CONSERVATIVE), frozenset(), w.attack_sources, w.targets
+        )
         assert d1 == d2
         falkor.drop_workspace(wsid)
         agree += 1
@@ -167,11 +188,34 @@ def test_depth_bound_soundness_in_falkordb(falkor: GraphClient, ws: str):
         led.add_node(Node(f"n{i}", "Identity" if i < n else "Asset", ws))
     led.add_source(SourceRecord("sig", "signed", False, "r", "high", 0, 0))
     for i in range(n):
-        led.assert_edge(fact_id=f"e{i}", type="CAN_ASSUME" if i < n - 1 else "CAN_ACCESS", src=f"n{i}",
-                        dst=f"n{i + 1}", at=0, source_ids=["sig"], valid_from=0, valid_open_ended=True)
-    meta = ScenarioMeta("chain", "chain", "", {"incident_id": "INC-CHAIN", "title": "chain", "severity": "low",
-                                               "compromised_set": ["n0"], "targets": [f"n{n}"], "T_incident":
-                                               "2026-01-01T00:00:00Z"}, 10, [Flow("f", "n0", "n1", 1, "soft")], [], [], [])
+        led.assert_edge(
+            fact_id=f"e{i}",
+            type="CAN_ASSUME" if i < n - 1 else "CAN_ACCESS",
+            src=f"n{i}",
+            dst=f"n{i + 1}",
+            at=0,
+            source_ids=["sig"],
+            valid_from=0,
+            valid_open_ended=True,
+        )
+    meta = ScenarioMeta(
+        "chain",
+        "chain",
+        "",
+        {
+            "incident_id": "INC-CHAIN",
+            "title": "chain",
+            "severity": "low",
+            "compromised_set": ["n0"],
+            "targets": [f"n{n}"],
+            "T_incident": "2026-01-01T00:00:00Z",
+        },
+        10,
+        [Flow("f", "n0", "n1", 1, "soft")],
+        [],
+        [],
+        [],
+    )
     repo.persist_ledger(led, meta)
     w = repo.world()
     edges = engine.snapshot_edges(w, 5, 5, TrustPolicy.CONSERVATIVE)

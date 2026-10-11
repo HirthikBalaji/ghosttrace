@@ -28,9 +28,12 @@ class Principal:
 _SUBJECT_RE = re.compile(r"^[A-Za-z0-9_.@-]{1,64}$")
 
 
-def authenticate(request: Request, x_gt_demo_token: str | None = Header(default=None),
-                 x_gt_workspace: str | None = Header(default=None),
-                 x_gt_user: str | None = Header(default=None)) -> Principal:
+def authenticate(
+    request: Request,
+    x_gt_demo_token: str | None = Header(default=None),
+    x_gt_workspace: str | None = Header(default=None),
+    x_gt_user: str | None = Header(default=None),
+) -> Principal:
     s = get_settings()
     ws = x_gt_workspace or "demo"
     if not WORKSPACE_RE.fullmatch(ws):

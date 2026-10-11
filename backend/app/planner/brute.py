@@ -13,8 +13,9 @@ from app.reasoning.paths import reopening_distance
 BRUTE_FORCE_LIMIT = 20
 
 
-def brute_force(edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[str], flows: Sequence[Flow],
-                candidates: list[Action], k: int) -> tuple[int, list[str]] | None:
+def brute_force(
+    edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[str], flows: Sequence[Flow], candidates: list[Action], k: int
+) -> tuple[int, list[str]] | None:
     if len(candidates) > BRUTE_FORCE_LIMIT:
         raise ValueError("brute force is limited to small instances")
     fe = FlowEvaluator(edges, flows)

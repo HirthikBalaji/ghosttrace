@@ -29,12 +29,16 @@ def graph_key(workspace_id: str) -> str:
 
 
 class GraphClient:
-    def __init__(self, host: str | None = None, port: int | None = None, password: str | None = None,
-                 timeout_ms: int | None = None):
+    def __init__(
+        self, host: str | None = None, port: int | None = None, password: str | None = None, timeout_ms: int | None = None
+    ):
         s = get_settings()
         self.timeout_ms = timeout_ms or s.query_timeout_ms
-        self.db = FalkorDB(host=host or s.falkordb_host, port=port or s.falkordb_port,
-                           password=password if password is not None else s.falkordb_password)
+        self.db = FalkorDB(
+            host=host or s.falkordb_host,
+            port=port or s.falkordb_port,
+            password=password if password is not None else s.falkordb_password,
+        )
         self._lock = threading.Lock()
 
     def ping(self) -> bool:
@@ -46,13 +50,15 @@ class GraphClient:
     def _g(self, workspace_id: str) -> Any:
         return self.db.select_graph(graph_key(workspace_id))
 
-    def ro(self, workspace_id: str, query: str, params: dict[str, Any] | None = None,
-           timeout_ms: int | None = None) -> list[list[Any]]:
+    def ro(
+        self, workspace_id: str, query: str, params: dict[str, Any] | None = None, timeout_ms: int | None = None
+    ) -> list[list[Any]]:
         res = self._g(workspace_id).ro_query(query, params=params or {}, timeout=timeout_ms or self.timeout_ms)
         return list(res.result_set)
 
-    def rw(self, workspace_id: str, query: str, params: dict[str, Any] | None = None,
-           timeout_ms: int | None = None) -> list[list[Any]]:
+    def rw(
+        self, workspace_id: str, query: str, params: dict[str, Any] | None = None, timeout_ms: int | None = None
+    ) -> list[list[Any]]:
         res = self._g(workspace_id).query(query, params=params or {}, timeout=timeout_ms or self.timeout_ms)
         return list(res.result_set)
 

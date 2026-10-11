@@ -20,12 +20,12 @@ from app.reasoning.paths import INF, reopening_distance
 class RedTeam:
     agent_type = "red_team"
 
-    def run(self, inp: RedTeamInput, tb: ToolBox, llm: Provider, T: int,
-            max_nominations: int = 12) -> tuple[RedTeamOutput, dict[str, Any]]:
+    def run(
+        self, inp: RedTeamInput, tb: ToolBox, llm: Provider, T: int, max_nominations: int = 12
+    ) -> tuple[RedTeamOutput, dict[str, Any]]:
         tau_after = inp.tau + 60_000  # simulated clock tick: red-team knowledge is learned after planning
         cand = tb.call("latent_candidates", T=T, tau=inp.tau, limit=200)
-        noms_raw, usage = llm.complete("red_team_nominations", {"candidates": cand, "limit": max_nominations}, [],
-                                       Nominations)
+        noms_raw, usage = llm.complete("red_team_nominations", {"candidates": cand, "limit": max_nominations}, [], Nominations)
         assert isinstance(noms_raw, Nominations)
         known = {(c["template_id"], c["src"], c["dst"]) for c in cand}
         nominations = []
@@ -38,14 +38,26 @@ class RedTeam:
                 nominations.append({**n, "accepted": False, "reason": "nomination references ids the graph did not return"})
                 continue
             ok = tb.call("check_latent_nomination", template_id=key[0], src=key[1], dst=key[2], at=inp.tau)
-            nominations.append({**n, "accepted": ok, "reason": "Cypher precondition satisfied" if ok
-                                else "Cypher precondition not satisfied"})
+            nominations.append(
+                {**n, "accepted": ok, "reason": "Cypher precondition satisfied" if ok else "Cypher precondition not satisfied"}
+            )
             if ok:
                 t = TEMPLATES[key[0]]
-                new_latent.append(SnapEdge(edge_id=f"lat:{key[0]}:{key[1]}->{key[2]}", version=1, type=t.edge_type,
-                                           src=key[1], dst=key[2], src_type=types.get(key[1], ""),
-                                           dst_type=types.get(key[2], ""), cls="LATENT", temporal="ACTIVE",
-                                           template_id=key[0], verify_cost=t.verify_cost))
+                new_latent.append(
+                    SnapEdge(
+                        edge_id=f"lat:{key[0]}:{key[1]}->{key[2]}",
+                        version=1,
+                        type=t.edge_type,
+                        src=key[1],
+                        dst=key[2],
+                        src_type=types.get(key[1], ""),
+                        dst_type=types.get(key[2], ""),
+                        cls="LATENT",
+                        temporal="ACTIVE",
+                        template_id=key[0],
+                        verify_cost=t.verify_cost,
+                    )
+                )
         findings, downgraded, tampering = [], [], []
         base_edges = list(snap.values())
         for cid in inp.certificate_ids:
@@ -59,9 +71,13 @@ class RedTeam:
             d_before, _ = reopening_distance(base_edges, removed, cert["sources"], cert["targets"])
             d_after, wit = reopening_distance(base_edges + new_latent, removed, cert["sources"], cert["targets"])
             k = cert["robustness"]["k_certified"]
-            f = {"certificate_id": cid, "k_certified": k, "d_before": None if d_before == INF else int(d_before),
-                 "d_with_red_team_latents": None if d_after == INF else int(d_after),
-                 "witness": [e.edge_id for e in wit]}
+            f = {
+                "certificate_id": cid,
+                "k_certified": k,
+                "d_before": None if d_before == INF else int(d_before),
+                "d_with_red_team_latents": None if d_after == INF else int(d_after),
+                "witness": [e.edge_id for e in wit],
+            }
             if d_after <= k:
                 f["result"] = "DEFEATED: an accepted latent nomination reopens the plan within k_certified"
                 downgraded.append(cid)
@@ -69,9 +85,19 @@ class RedTeam:
                 f["result"] = "held: no accepted nomination reopens the plan within its certified k"
             findings.append(f)
             for lb in cert.get("load_bearing_detail", [])[:6]:
-                tampering.append({"certificate_id": cid, "forge_or_suppress": lb["sources"],
-                                  "effect": lb["invalidates"],
-                                  "mitigation": "independently re-verify these records before relying on the plan"})
-        return RedTeamOutput(findings=findings, nominations=nominations, downgraded_certificate_ids=downgraded,
-                             tampering_scenarios=tampering, replan_required=bool(downgraded), tau_after=tau_after), {
-            "usage": usage.__dict__, "accepted_latent": [e.export() for e in new_latent]}
+                tampering.append(
+                    {
+                        "certificate_id": cid,
+                        "forge_or_suppress": lb["sources"],
+                        "effect": lb["invalidates"],
+                        "mitigation": "independently re-verify these records before relying on the plan",
+                    }
+                )
+        return RedTeamOutput(
+            findings=findings,
+            nominations=nominations,
+            downgraded_certificate_ids=downgraded,
+            tampering_scenarios=tampering,
+            replan_required=bool(downgraded),
+            tau_after=tau_after,
+        ), {"usage": usage.__dict__, "accepted_latent": [e.export() for e in new_latent]}
