@@ -63,10 +63,10 @@ class GraphClient:
         return list(res.result_set)
 
     def profile(self, workspace_id: str, query: str, params: dict[str, Any] | None = None) -> str:
-        return str(self._g(workspace_id).profile(query, params=params or {}))
+        return "\n".join(self._g(workspace_id).profile(query, params=params or {}).plan)
 
     def explain(self, workspace_id: str, query: str, params: dict[str, Any] | None = None) -> str:
-        return str(self._g(workspace_id).explain(query, params=params or {}))
+        return "\n".join(self._g(workspace_id).explain(query, params=params or {}).plan)
 
     def list_workspaces(self) -> list[str]:
         return sorted(k[3:] for k in self.db.list_graphs() if k.startswith("ws:"))

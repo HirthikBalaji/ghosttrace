@@ -12,7 +12,7 @@
 - falkordb_client: `1.7.1 (pinned)`
 - falkordb_server: `falkordb/falkordb:v4.22.0`
 - provider: `mock (deterministic)`
-- wall_s: `115.6`
+- wall_s: `115.0`
 - instances_per_family: `100`
 
 ## Headline
@@ -40,7 +40,7 @@ Parameters: `{"n_mid": 6, "n_paths": 2, "branching": 1.2, "latent_density": 0.12
 - Verifier mutation testing: {'applied': 268, 'killed': 268, 'equivalent_identical': 7, 'not_applicable': 10}
 - Temporal/R2 correctness on churned facts: 1.000 [0.95, 1.00] (n=79)
 - Citation resolution (action evidence ids resolve to stored records): 1.000 [1.00, 1.00] (n=963)
-- Solver time per plan (ms): {'median': 0.41, 'p95': 1.06, 'samples': 300}
+- Solver time per plan (ms): {'median': 0.42, 'p95': 1.09, 'samples': 300}
 
 Robustness calibration (fraction of GHOSTTRACE plans reopened in modeled W*, by reopening distance d; valid only under the generator's synthetic prior p_latent_true):
 
@@ -72,7 +72,7 @@ Parameters: `{"n_mid": 10, "n_paths": 2, "branching": 1.2, "latent_density": 0.1
 - Verifier mutation testing: {'applied': 272, 'killed': 272, 'equivalent_identical': 5, 'not_applicable': 8}
 - Temporal/R2 correctness on churned facts: 1.000 [0.97, 1.00] (n=124)
 - Citation resolution (action evidence ids resolve to stored records): 1.000 [1.00, 1.00] (n=1100)
-- Solver time per plan (ms): {'median': 0.72, 'p95': 2.16, 'samples': 300}
+- Solver time per plan (ms): {'median': 0.72, 'p95': 2.17, 'samples': 300}
 
 Robustness calibration (fraction of GHOSTTRACE plans reopened in modeled W*, by reopening distance d; valid only under the generator's synthetic prior p_latent_true):
 
@@ -105,7 +105,7 @@ Parameters: `{"n_mid": 10, "n_paths": 2, "branching": 1.2, "latent_density": 0.1
 - Verifier mutation testing: {'applied': 281, 'killed': 281, 'equivalent_identical': 2, 'not_applicable': 2}
 - Temporal/R2 correctness on churned facts: 1.000 [0.97, 1.00] (n=124)
 - Citation resolution (action evidence ids resolve to stored records): 1.000 [1.00, 1.00] (n=1030)
-- Solver time per plan (ms): {'median': 0.7, 'p95': 1.88, 'samples': 300}
+- Solver time per plan (ms): {'median': 0.68, 'p95': 1.89, 'samples': 300}
 
 Robustness calibration (fraction of GHOSTTRACE plans reopened in modeled W*, by reopening distance d; valid only under the generator's synthetic prior p_latent_true):
 
@@ -122,16 +122,18 @@ Failures listed (0):
 
 | n_mid | mean edge versions | plan k=1 ms (median/p95) | replan cold | replan warm | speedup | FalkorDB snapshot query ms | FalkorDB path enum (depth 6) ms |
 |---|---|---|---|---|---|---|---|
-| 10 | 19.2 | 0.59 / 1.02 (n=5) | 0.59 / 0.91 (n=5) | 0.47 / 0.75 (n=5) | 1.25× | 2.15 / 2.54 (n=15) | 1.01 / 1.32 (n=15) |
-| 20 | 44.4 | 2.07 / 2.32 (n=5) | 1.84 / 2.33 (n=5) | 1.41 / 2.83 (n=5) | 1.31× | 4.14 / 5.05 (n=15) | 1.23 / 2.0 (n=15) |
-| 40 | 133.4 | 7.31 / 10.36 (n=5) | 7.4 / 8.36 (n=5) | 5.68 / 6.0 (n=5) | 1.3× | 11.57 / 13.2 (n=15) | 17.02 / 24.07 (n=15) |
-| 80 | 423.8 | 21.8 / 28.96 (n=5) | 18.27 / 21.88 (n=5) | 16.02 / 23.96 (n=5) | 1.14× | 35.17 / 45.45 (n=15) | 31.78 / 40.12 (n=15) |
-| 160 | 1456.8 | 129.42 / 130.59 (n=5) | 116.61 / 124.45 (n=5) | 107.44 / 112.37 (n=5) | 1.09× | 125.41 / 129.4 (n=15) | 53.45 / 63.95 (n=15) |
+| 10 | 19.2 | 0.58 / 1.08 (n=5) | 0.6 / 0.85 (n=5) | 0.49 / 0.73 (n=5) | 1.24× | 2.19 / 3.64 (n=15) | 1.01 / 1.91 (n=15) |
+| 20 | 44.4 | 2.36 / 2.67 (n=5) | 2.15 / 2.81 (n=5) | 1.97 / 4.05 (n=5) | 1.1× | 4.63 / 5.21 (n=15) | 1.26 / 2.6 (n=15) |
+| 40 | 133.4 | 9.42 / 9.59 (n=5) | 8.15 / 9.12 (n=5) | 5.11 / 6.08 (n=5) | 1.6× | 11.77 / 14.16 (n=15) | 13.85 / 21.39 (n=15) |
+| 80 | 423.8 | 20.97 / 27.04 (n=5) | 17.05 / 17.76 (n=5) | 15.19 / 21.64 (n=5) | 1.12× | 33.9 / 42.07 (n=15) | 31.0 / 39.94 (n=15) |
+| 160 | 1456.8 | 130.32 / 132.88 (n=5) | 117.62 / 121.07 (n=5) | 103.83 / 108.75 (n=5) | 1.13× | 127.45 / 137.28 (n=15) | 60.12 / 68.3 (n=15) |
 
 ## How to read this / limitations
 
 - B0 = disable alerted account only; B1 = greedy by degree centrality on a time- and trust-blind static graph; B2 = static min-cost cut ignoring time, trust and must-keep flows; B3 = mock LLM-only recommender (no graph verification).
 - 'Residual exposure (incl. unmodeled)' counts hidden edges no system could see; certificates explicitly exclude them by assumption, so this rate is expected to be non-zero for every method.
 - Residual exposure in *modeled* W* for GHOSTTRACE comes from hidden-true latent edges; it falls as k rises, which is the measured Price-of-Certainty trade-off.
+- 'Regret vs optimum' is measured against the brute-force k=0 optimum (small family only). For GT_k0 it is true suboptimality; for GT_k1/GT_k2 it is the extra cost paid for robustness (the Price of Certainty), not an error.
+- Incremental replanning reuses re-validated constraints/nogoods; measured speedups are modest (see scaling table).
 - Costs are seeded integers, not business impact. Generated latent edges bypass template preconditions (documented).
 - Soundness here means: no path made only of edges the system classified CONFIRMED survives in W* after the plan.

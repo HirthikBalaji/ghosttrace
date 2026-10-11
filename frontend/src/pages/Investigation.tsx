@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { api, fmt, isoOf, qs } from "../api";
+import { api, fmt, isoOf, qs, stream } from "../api";
 import type { Route } from "../App";
 import { ClassBadge, FlagBadges, State, StatusBadge, Synthetic, useAsync } from "../components/common";
 import { GraphView, Legend } from "../components/GraphView";
@@ -11,24 +11,37 @@ const DAY = 86_400_000;
 export function useInvestigation(invId: string) {
   const [state, setState] = useState<{ investigation: Investigation; tasks: Task[]; handoffs: Handoff[] } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [live, setLive] = useState<"stream" | "poll" | "idle">("idle");
   useEffect(() => {
     let alive = true;
     let timer: number | undefined;
-    const tick = async () => {
-      try {
-        const d = await api.get<{ investigation: Investigation; tasks: Task[]; handoffs: Handoff[] }>(`/api/v1/investigations/${invId}`);
-        if (!alive) return;
-        setState(d);
-        setError(null);
-        if (["running", "created"].includes(d.investigation.status)) timer = window.setTimeout(tick, 900);
-      } catch (e) {
-        if (alive) setError((e as Error).message);
-      }
+    const ctl = new AbortController();
+    const load = async () => {
+      const d = await api.get<{ investigation: Investigation; tasks: Task[]; handoffs: Handoff[] }>(`/api/v1/investigations/${invId}`);
+      if (alive) { setState(d); setError(null); }
+      return d;
     };
-    tick();
-    return () => { alive = false; if (timer) clearTimeout(timer); };
+    const poll = async () => {
+      try {
+        const d = await load();
+        if (alive && ["running", "created"].includes(d.investigation.status)) { setLive("poll"); timer = window.setTimeout(poll, 900); }
+        else if (alive) setLive("idle");
+      } catch (e) { if (alive) setError((e as Error).message); }
+    };
+    (async () => {
+      try {
+        const d = await load();
+        if (!["running", "created"].includes(d.investigation.status)) return;
+        setLive("stream");
+        await stream(`/api/v1/investigations/${invId}/events`, () => { load().catch(() => undefined); }, ctl.signal);
+        if (alive) { await load(); setLive("idle"); }
+      } catch (e) {
+        if (alive && (e as Error).name !== "AbortError") poll(); // streaming unavailable: fall back to polling
+      }
+    })();
+    return () => { alive = false; ctl.abort(); if (timer) clearTimeout(timer); };
   }, [invId]);
-  return { state, error };
+  return { state, error, live };
 }
 
 export function Pipeline({ tasks }: { tasks: Task[] }) {
@@ -128,7 +141,7 @@ function SourceLine({ s, id }: { s?: Source; id: string }) {
 }
 
 export function InvestigationPage({ invId, go }: { invId: string; go: (r: Route, inv?: string | null, cert?: string | null) => void }) {
-  const { state, error } = useInvestigation(invId);
+  const { state, error, live } = useInvestigation(invId);
   const inv = state?.investigation;
   const [T, setT] = useState<number | null>(null);
   const [tau, setTau] = useState<number | null>(null);
@@ -169,7 +182,10 @@ export function InvestigationPage({ invId, go }: { invId: string; go: (r: Route,
           <button className="btn" onClick={() => go("containment")}>Containment →</button>
         </div>
       </div>
-      <div className="card"><Pipeline tasks={state.tasks} /></div>
+      <div className="card">
+        <Pipeline tasks={state.tasks} />
+        {live !== "idle" && <p className="small muted" aria-live="polite" style={{ margin: "8px 0 0" }}>Live progress via {live === "stream" ? "server-sent events" : "polling (stream unavailable)"}…</p>}
+      </div>
       <div style={{ height: 16 }} />
       {T !== null && tau !== null && <TimeControls inv={inv} T={T} tau={tau} setT={setT} setTau={setTau} />}
       <div style={{ height: 16 }} />

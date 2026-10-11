@@ -1,0 +1,20 @@
+# Demo script (≈3½ minutes)
+
+**Setup.** Run `docker compose up -d --build` and open http://localhost:8080, or use `make api` and `make web`.
+Everything shown is synthetic, and every action is a simulation. This script was rehearsed: the Playwright test
+`frontend/e2e/demo.spec.ts` runs the same steps and passed against both the dev stack and the Compose stack.
+
+| Time | Do | Say / point at |
+|---|---|---|
+| 0:00 | Command center → **Reset scenario & investigate** on *The Ghost Credential* | "An impossible-travel alert for dev-alice. A single event is not the connected system." |
+| 0:20 | The Investigation page opens. Watch the five pipeline stages complete | "Each agent is a persisted task with a lease and a handoff, not a role in one prompt." |
+| 0:30 | Select hypothesis *via cred:ci-token* (CONFIRMED). Click edges | Identity → workstation → **CI runner token** → ci-runner → deploy-role → payments-api → cardholder-db. Each edge has a source, a validity interval and a class. |
+| 0:45 | Click **Incident, as known then**, then **Incident, as known now** | "At incident time we didn't know the token was cached. The EDR scan arrived later. τ changes the world." |
+| 0:55 | Hypotheses page | The verifier flags RB-7 ("disable the account") as written before the CI credential existed. The rotation log is from the compromised host, so R2 disputes the edge instead of removing it. The duplicate SIEM alerts count as one root. The prior-incident "benign" memory is disputed. |
+| 1:25 | Containment page | B0: disabling dev-alice leaves a **residual CONFIRMED path**. The **Price of Certainty** curve shows costs 3, 10 and 14 for k = 0, 1 and 2. |
+| 1:45 | Click the k=1 point | Assumption frontier: the witness path plus "verify these edges first". `remove grant ws-alice→shared-config` is flagged **requires human scrutiny**. R4: it appears only under `conservative_defense` because a planted alert drives it. |
+| 2:05 | **Open certificate → Verify with independent verifier** | ACCEPTED (exit code 0) from a separate stdlib-only process. Show the statement, assumptions, limitations and load-bearing evidence: "if the IAM revocation record were false, a confirmed path survives." |
+| 2:20 | Company Brain → **Compare: as known then vs as known now** | `team:payments` (stale CMDB record) as known then; `team:platform` (backfilled reorg) as known now. The undated SRE wiki claim is flagged. |
+| 2:45 | Memory & audit | The episodic memory and the promoted semantic memory (6 independent roots). False-flag and injection memories are **tainted**. Handoffs and the audit trail are listed. Then restart: `docker compose restart backend` — the investigation and memory are all still there. |
+| 3:05 | Command center → *Ghost Credential B* | A different topology. The hard nightly-export flow rules out the cheapest network cut, so the computed plan differs. |
+| 3:20 | Open `evals/report.md` | 0 soundness violations across 900 certificates; baselines vs GHOSTTRACE with Wilson intervals; limitations: synthetic only, unmodeled edges. |

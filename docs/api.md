@@ -44,6 +44,7 @@ asserts the route list below equals the OpenAPI route list).
 | `POST /api/v1/investigations` | Create. Body `{"incident_id"?, "K": 0..3, "policy": "conservative_defense"\|"trust_filtered"}`. |
 | `GET /api/v1/investigations/{inv_id}` | Investigation, persisted tasks (state machine) and handoffs. |
 | `POST /api/v1/investigations/{inv_id}/run` | Start/resume the agent pipeline (202, background). `?sync=true` runs inline. |
+| `GET /api/v1/investigations/{inv_id}/events` | Server-sent events stream (`progress` on every task-state change, then `done`); `max_seconds` ≤ 600. Read with `fetch` streaming because the auth header is required. |
 | `POST /api/v1/investigations/{inv_id}/cancel` | Cancel; queued/running tasks become `cancelled`. |
 | `GET /api/v1/investigations/{inv_id}/graph` | Snapshot at (`T`, `tau`, `policy`): nodes, active/uncertain edges with class, flags, validity and transaction intervals, sources; `include_inactive` adds edges known but not valid at T; `include_knowledge` adds Company-Brain edges. |
 | `GET /api/v1/investigations/{inv_id}/edges/{edge_id}/history` | All bitemporal versions of a fact (supersession chain). |

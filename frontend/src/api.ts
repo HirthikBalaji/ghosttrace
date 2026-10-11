@@ -55,6 +55,28 @@ export const api = {
   },
 };
 
+// Server-sent events over fetch (EventSource cannot send the auth header). Resolves when the stream ends.
+export async function stream(path: string, onEvent: (event: string, data: any) => void, signal?: AbortSignal) {
+  const r = await fetch(`${BASE}${path}`, { headers: { "X-GT-Demo-Token": TOKEN, "X-GT-Workspace": workspace }, signal });
+  if (!r.ok || !r.body) throw new ApiError(r.status, "stream", `HTTP ${r.status}`);
+  const reader = r.body.getReader();
+  const dec = new TextDecoder();
+  let buf = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) return;
+    buf += dec.decode(value, { stream: true });
+    let i;
+    while ((i = buf.indexOf("\n\n")) >= 0) {
+      const chunk = buf.slice(0, i);
+      buf = buf.slice(i + 2);
+      const ev = /^event: (.*)$/m.exec(chunk)?.[1] ?? "message";
+      const data = /^data: (.*)$/m.exec(chunk)?.[1];
+      try { onEvent(ev, data ? JSON.parse(data) : null); } catch { /* ignore malformed event */ }
+    }
+  }
+}
+
 export function qs(params: Record<string, string | number | boolean | undefined | null>) {
   const u = new URLSearchParams();
   for (const [k, v] of Object.entries(params)) if (v !== undefined && v !== null && v !== "") u.set(k, String(v));

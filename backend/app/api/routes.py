@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import PlainTextResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.agents.brain import CompanyBrain
@@ -182,6 +182,38 @@ def run_investigation(inv_id: str, repo: Repo, p: Auth, sync: bool = False) -> d
         _running.add(inv_id)
     _executor.submit(_run_bg, p.workspace_id, inv_id)
     return ok({"investigation": inv, "note": "started"})
+
+
+@router.get("/investigations/{inv_id}/events")
+def investigation_events(inv_id: str, repo: Repo, max_seconds: int = Query(120, ge=1, le=600)) -> StreamingResponse:
+    """Server-sent events: one `progress` event whenever task state changes, `done` at a terminal status."""
+    import time as _time
+
+    _inv(repo, inv_id)
+    o = Orchestrator(repo)
+
+    def gen() -> Any:
+        last = None
+        deadline = _time.monotonic() + max_seconds
+        while _time.monotonic() < deadline:
+            inv = o.get(inv_id)
+            tasks = [
+                {k: t.get(k) for k in ("agent_type", "status", "attempt_count", "tool_calls", "error_category")}
+                for t in o.tasks(inv_id)
+            ]
+            snap = json.dumps({"status": inv["status"], "tasks": tasks}, default=str)
+            if snap != last:
+                yield f"event: progress\ndata: {snap}\n\n"
+                last = snap
+            if inv["status"] in ("completed", "failed", "cancelled"):
+                yield f"event: done\ndata: {json.dumps({'status': inv['status']})}\n\n"
+                return
+            _time.sleep(0.4)
+        yield "event: timeout\ndata: {}\n\n"
+
+    return StreamingResponse(
+        gen(), media_type="text/event-stream", headers={"Cache-Control": "no-store", "X-Accel-Buffering": "no"}
+    )
 
 
 @router.post("/investigations/{inv_id}/cancel")

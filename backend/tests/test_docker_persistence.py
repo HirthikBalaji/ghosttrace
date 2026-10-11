@@ -22,8 +22,10 @@ from app.orchestration.orchestrator import STAGES, Orchestrator
 
 pytestmark = [
     pytest.mark.docker,
-    pytest.mark.skipif(os.environ.get("GT_RUN_DOCKER_TESTS") != "1" or not shutil.which("docker"),
-                       reason="set GT_RUN_DOCKER_TESTS=1 to run container-restart tests"),
+    pytest.mark.skipif(
+        os.environ.get("GT_RUN_DOCKER_TESTS") != "1" or not shutil.which("docker"),
+        reason="set GT_RUN_DOCKER_TESTS=1 to run container-restart tests",
+    ),
 ]
 IMAGE = "falkordb/falkordb:v4.22.0"
 PORT = 6391
@@ -51,8 +53,20 @@ def connect(timeout: float = 60) -> GraphClient:
 @pytest.fixture()
 def container():
     name, vol = f"gt-persist-{uuid.uuid4().hex[:6]}", f"gt-persist-vol-{uuid.uuid4().hex[:6]}"
-    sh("docker", "run", "-d", "--name", name, "-p", f"127.0.0.1:{PORT}:6379", "-v", f"{vol}:/var/lib/falkordb/data",
-       "-e", "REDIS_ARGS=--appendonly yes --appendfsync always", IMAGE)
+    sh(
+        "docker",
+        "run",
+        "-d",
+        "--name",
+        name,
+        "-p",
+        f"127.0.0.1:{PORT}:6379",
+        "-v",
+        f"{vol}:/var/lib/falkordb/data",
+        "-e",
+        "REDIS_ARGS=--appendonly yes --appendfsync always",
+        IMAGE,
+    )
     try:
         yield name
     finally:
