@@ -105,6 +105,8 @@ CLAIM_TASK = ("MATCH (t:AgentTask {task_id: $tid}) WHERE t.workspace_id = $ws AN
 # Compare-and-set completion: only the current lease owner can write the result.
 COMPLETE_TASK = ("MATCH (t:AgentTask {task_id: $tid}) WHERE t.workspace_id = $ws AND t.status = 'running' AND "
                  "t.lease_owner = $owner SET t += $props RETURN properties(t)")
+REQUEUE_TASK = ("MATCH (t:AgentTask {task_id: $tid}) WHERE t.workspace_id = $ws AND t.status = 'failed' "
+                "SET t.status = 'queued', t.lease_owner = '' RETURN t.task_id")
 GET_TASKS = ("MATCH (i:Investigation {id: $inv})-[:HAS_TASK]->(t:AgentTask) WHERE t.workspace_id = $ws "
              "RETURN properties(t) ORDER BY t.seq")
 CANCEL_TASKS = ("MATCH (i:Investigation {id: $inv})-[:HAS_TASK]->(t:AgentTask) WHERE t.workspace_id = $ws AND "

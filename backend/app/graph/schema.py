@@ -17,7 +17,9 @@ NODE_INDEXES = [
 ]
 UNIQUE = [("Entity", "id"), ("SourceRecord", "source_id"), ("Investigation", "id"), ("AgentTask", "task_id"),
           ("AgentTask", "idempotency_key"), ("Memory", "memory_id")]
-EDGE_INDEX_PROPS = ("edge_id", "tx_from", "valid_from", "workspace_id")
+# Only edge_id: FalkorDB v4.22.0 mis-binds multi-edge patterns when several relationships have
+# index-eligible filters (Edge By Index Scan); see DECISIONS.md D-008 and tests/test_falkordb_regressions.py.
+EDGE_INDEX_PROPS = ("edge_id",)
 
 
 def _ignore_exists(fn: Callable[[], object]) -> None:
@@ -40,7 +42,19 @@ def migration_1(client: GraphClient, ws: str) -> None:
         _ignore_exists(lambda label=label, prop=prop: g.create_node_unique_constraint(label, prop))
 
 
-MIGRATIONS: list[tuple[int, Callable[[GraphClient, str], None]]] = [(1, migration_1)]
+def migration_2(client: GraphClient, ws: str) -> None:
+    """Drop relationship range indexes on temporal/workspace props (FalkorDB v4.22.0 planner issue, D-008)."""
+    g = client._g(ws)
+    for t in ALL_FACT_EDGE_TYPES:
+        for prop in ("tx_from", "valid_from", "workspace_id"):
+            try:
+                g.drop_edge_range_index(t, prop)
+            except Exception as exc:
+                if "not" not in str(exc).lower() and "unable" not in str(exc).lower():
+                    raise
+
+
+MIGRATIONS: list[tuple[int, Callable[[GraphClient, str], None]]] = [(1, migration_1), (2, migration_2)]
 CURRENT_SCHEMA_VERSION = MIGRATIONS[-1][0]
 
 
