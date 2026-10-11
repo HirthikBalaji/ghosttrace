@@ -1,7 +1,7 @@
-// Thin typed client for the GHOSTTRACE API. Demo-only auth header; never real credentials.
+// Thin typed client for the GHOSTTRACE API. Auth headers come from ./auth (OIDC bearer or local demo header).
+import { authHeaders } from "./auth";
 
 const BASE = (import.meta.env.VITE_API_BASE as string | undefined) ?? "";
-const TOKEN = (import.meta.env.VITE_GT_DEMO_TOKEN as string | undefined) ?? "dev-demo-token";
 
 export class ApiError extends Error {
   status: number;
@@ -25,7 +25,7 @@ async function req<T>(method: string, path: string, body?: unknown, raw = false)
   const r = await fetch(`${BASE}${path}`, {
     method,
     headers: {
-      "X-GT-Demo-Token": TOKEN,
+      ...authHeaders(),
       "X-GT-Workspace": workspace,
       ...(body !== undefined ? { "Content-Type": "application/json" } : {}),
     },
@@ -57,7 +57,7 @@ export const api = {
 
 // Server-sent events over fetch (EventSource cannot send the auth header). Resolves when the stream ends.
 export async function stream(path: string, onEvent: (event: string, data: any) => void, signal?: AbortSignal) {
-  const r = await fetch(`${BASE}${path}`, { headers: { "X-GT-Demo-Token": TOKEN, "X-GT-Workspace": workspace }, signal });
+  const r = await fetch(`${BASE}${path}`, { headers: { ...authHeaders(), "X-GT-Workspace": workspace }, signal });
   if (!r.ok || !r.body) throw new ApiError(r.status, "stream", `HTTP ${r.status}`);
   const reader = r.body.getReader();
   const dec = new TextDecoder();

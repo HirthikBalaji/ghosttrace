@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 import threading
+import time
 from typing import Any
 
 from falkordb import FalkorDB
@@ -67,6 +68,24 @@ class GraphClient:
 
     def explain(self, workspace_id: str, query: str, params: dict[str, Any] | None = None) -> str:
         return "\n".join(self._g(workspace_id).explain(query, params=params or {}).plan)
+
+    def compact_aof(self, wait_s: float = 30.0) -> bool:
+        """BGREWRITEAOF and wait for it; a no-op (False) when AOF is disabled or the command is not permitted."""
+        conn = self.db.connection
+        try:
+            if conn.config_get("appendonly").get("appendonly") != "yes":
+                return False
+            conn.bgrewriteaof()
+        except Exception as exc:
+            if "already in progress" not in str(exc).lower():
+                return False
+        deadline = time.monotonic() + wait_s
+        while time.monotonic() < deadline:
+            info = conn.info("persistence")
+            if not info.get("aof_rewrite_in_progress") and not info.get("aof_rewrite_scheduled"):
+                return True
+            time.sleep(0.1)
+        return False
 
     def list_workspaces(self) -> list[str]:
         return sorted(k[3:] for k in self.db.list_graphs() if k.startswith("ws:"))

@@ -1,0 +1,73 @@
+# Production profile (overlay): docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# - TLS terminated by Caddy (automatic HTTPS for GT_DOMAIN, or `tls internal` for a private CA)
+# - OIDC bearer auth (GT_ENV=production refuses anything else), roles + workspace claims from the IdP
+# - FalkorDB password-protected and not published on the host; persistent volume + AOF from the base file
+# - investigations run on separate worker replicas (GT_RUN_MODE=queue)
+services:
+  falkordb:
+    ports: !reset []
+    environment:
+      REDIS_ARGS: "--appendonly yes --appendfsync everysec --save 60 1 --save 300 10 --requirepass ${GT_FALKORDB_PASSWORD:?set GT_FALKORDB_PASSWORD}"
+      REDISCLI_AUTH: ${GT_FALKORDB_PASSWORD}
+
+  backend: &app
+    ports: !reset []
+    environment: &appenv
+      GT_ENV: production
+      GT_AUTH_MODE: oidc
+      GT_RUN_MODE: queue
+      GT_FALKORDB_HOST: falkordb
+      GT_FALKORDB_PORT: "6379"
+      GT_FALKORDB_PASSWORD: ${GT_FALKORDB_PASSWORD}
+      GT_OIDC_ISSUER: ${GT_OIDC_ISSUER:?set GT_OIDC_ISSUER}
+      GT_OIDC_AUDIENCE: ${GT_OIDC_AUDIENCE:?set GT_OIDC_AUDIENCE}
+      GT_OIDC_JWKS_URL: ${GT_OIDC_JWKS_URL:-}
+      GT_OIDC_JWKS_JSON: ${GT_OIDC_JWKS_JSON:-}
+      GT_OIDC_ALGORITHMS: ${GT_OIDC_ALGORITHMS:-RS256,ES256}
+      GT_OIDC_ROLES_CLAIM: ${GT_OIDC_ROLES_CLAIM:-roles}
+      GT_OIDC_WORKSPACES_CLAIM: ${GT_OIDC_WORKSPACES_CLAIM:-gt_workspaces}
+      GT_CORS_ORIGINS: https://${GT_DOMAIN:?set GT_DOMAIN}
+      GT_DEMO_TOKEN: ""
+      GT_LLM_PROVIDER: ${GT_LLM_PROVIDER:-mock}
+      GT_LLM_MODEL: ${GT_LLM_MODEL:-claude-opus-5-5}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+  worker:
+    <<: *app
+    image: ghosttrace-backend:local
+    build: { context: ., dockerfile: backend/Dockerfile }
+    read_only: true
+    tmpfs: ["/tmp", "/srv/.artifacts:uid=10001,gid=10001,mode=0700"]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    command: ["python", "-m", "app.worker"]
+    healthcheck: { disable: true }
+    depends_on: { falkordb: { condition: service_healthy } }
+    deploy: { replicas: 2, resources: { limits: { memory: 768m, cpus: "2" } } }
+
+  frontend:
+    ports: !reset []
+    environment:
+      GT_CSP_CONNECT_EXTRA: ${GT_OIDC_ORIGIN:?set GT_OIDC_ORIGIN (scheme+host of the IdP)}
+    build:
+      args:
+        VITE_AUTH_MODE: oidc
+        VITE_OIDC_AUTHORITY: ${GT_OIDC_ISSUER}
+        VITE_OIDC_CLIENT_ID: ${GT_OIDC_CLIENT_ID:?set GT_OIDC_CLIENT_ID}
+        VITE_GT_DEMO_TOKEN: ""
+
+  proxy:
+    image: caddy:2.10.2-alpine
+    depends_on: [frontend]
+    ports: ["443:443", "80:80"]
+    environment:
+      GT_DOMAIN: ${GT_DOMAIN}
+      GT_TLS: ${GT_TLS:-internal}    # "internal" = private CA; an e-mail address = public ACME certificate
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+
+volumes:
+  caddy-data: {}

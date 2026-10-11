@@ -31,6 +31,14 @@ Each entry: decision · alternatives · reason.
 | D-025 | TypeScript 7.0.2 (latest at build time) | TS 5.x | Typecheck and build verified; no compatibility issues found. |
 | D-026 | Graph view uses Cytoscape `breadthfirst` rooted at suspected-compromised sources; edge labels off by default (toggle) | Force-directed layout | Readable attack-path direction. Class is also encoded by line style, legend and table text, never color alone. |
 
+| D-027 | **No FalkorDB unique constraints.** Uniqueness is enforced by `MERGE` on stable ids. Migration 3 drops legacy constraints and compacts the AOF | Keep the constraints as defense in depth | FalkorDB v4.22.0 with AOF persistence crash-loops on the second restart after a graph that had a unique constraint is deleted (reproduced; `docs/upstream/falkordb-aof-unique-constraint-crash.md`). Workspace resets delete graphs, so this was a production outage path. Regression tests restart a real container three times. |
+| D-028 | Claude provider via the official `anthropic` SDK; default `claude-opus-5-5`, effort `low`, structured output from a closed JSON schema, server-side refusal fallbacks (`fallbacks: "default"`) | Raw HTTP; a cheaper model | The SDK is the supported path. The model only proposes/summarises; every proposal is simulated and certified (model advisor gate). Low effort keeps cost down for summarisation-sized tasks; raise it via code if needed. |
+| D-029 | OIDC/JWT bearer auth (JWKS, asymmetric algorithms only, required `iss`/`aud`/`exp`/`iat`/`sub`), roles from a configurable claim, workspace allowlist claim; `GT_ENV=production` refuses any other mode at startup and per request | Session cookies; a bundled IdP | Standard, IdP-agnostic, testable with a pinned JWKS. |
+| D-030 | Approval is a recorded human decision with four-eyes, verifier re-check and scrutiny acknowledgement; there is still no executor | Integrate real containment APIs | Safety: executing actions against real systems is out of scope for this build. |
+| D-031 | Queue mode: API enqueues, `python -m app.worker` replicas claim investigations by CAS; per-stage leases prevent double writes | Celery/RQ | No new infrastructure; the graph is already the durable coordination store. |
+| D-032 | Rate limits counted in FalkorDB's Redis keyspace (`INCR`/`EXPIRE`), falling back to an in-process bucket | Separate Redis | Shared across replicas with no extra service. |
+| D-033 | Integration tests refuse to run against an AOF-persistent FalkorDB unless `GT_TESTS_ALLOW_PERSISTENT=1` | Trust the operator | Running the suite against the Compose volume is what poisoned it with deleted test graphs. |
+
 ## Untrusted content encountered (§0.3)
 
 - `BUILD.md` is the operator's prompt. No other pre-existing repository content existed.

@@ -42,6 +42,15 @@ def falkor() -> Iterator[GraphClient]:
     c = GraphClient(host=FALKOR_HOST, port=FALKOR_PORT, timeout_ms=5000)
     if not c.ping():
         pytest.skip("FalkorDB not reachable (integration tests need GT_FALKORDB_HOST/PORT)")
+    # Integration tests create and delete many graphs. Never run them against a persistent (AOF) instance that holds
+    # real data; set GT_TESTS_ALLOW_PERSISTENT=1 only for a disposable one.
+    if os.environ.get("GT_TESTS_ALLOW_PERSISTENT") != "1":
+        try:
+            aof = c.db.connection.config_get("appendonly").get("appendonly")
+        except Exception:
+            aof = "unknown"
+        if aof == "yes":
+            pytest.exit("refusing to run integration tests against a FalkorDB with AOF persistence enabled", returncode=2)
     set_client(c)
     yield c
     set_client(None)

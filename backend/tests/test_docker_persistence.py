@@ -99,3 +99,44 @@ def test_state_survives_container_restart_and_resumes(container):
     tasks = o2.tasks(inv["id"])
     assert [t["agent_type"] for t in tasks] == STAGES and all(t["attempt_count"] == 1 for t in tasks)
     assert any(m["investigation_id"] == inv["id"] for m in MemoryService(repo2).entries())
+
+
+def _restart_n(container: str, n: int = 3) -> GraphClient:
+    for _ in range(n):
+        sh("docker", "restart", container)
+        c = connect()
+    return c
+
+
+def test_workspace_delete_then_restarts_does_not_crash(container):
+    """Regression for FalkorDB v4.22.0: deleting a graph that had a unique constraint poisons the AOF and the
+    server crash-loops after the second restart (DECISIONS D-027). Our schema no longer creates constraints."""
+    c = connect()
+    for i in range(3):
+        seed(c, f"t-del-{i}", "ghost_credential_a")
+        c.drop_workspace(f"t-del-{i}")
+    seed(c, "keep", "ghost_credential_a")
+    c = _restart_n(container, 3)
+    assert "keep" in c.list_workspaces() and not any(w.startswith("t-del-") for w in c.list_workspaces())
+
+
+def test_legacy_constraints_removed_by_migration_3(container):
+    from app.graph.schema import LEGACY_UNIQUE, migrate
+
+    c = connect()
+    for i in range(2):
+        ws = f"legacy-{i}"
+        g = c._g(ws)
+        c.rw(ws, "CREATE (:Workspace {id: $ws})", {"ws": ws})
+        for label, prop in LEGACY_UNIQUE:  # what migration 1 used to create
+            g.create_node_range_index(label, prop)
+            g.create_node_unique_constraint(label, prop)
+        c.rw(ws, "MERGE (v:SchemaVersion {version: 2})")
+    for i in range(2):
+        assert migrate(c, f"legacy-{i}") == [3]
+        from app.graph.schema import _unique_constraints
+
+        assert not _unique_constraints(c._g(f"legacy-{i}"))
+    c.drop_workspace("legacy-0")
+    c = _restart_n(container, 3)
+    assert c.list_workspaces() == ["legacy-1"]

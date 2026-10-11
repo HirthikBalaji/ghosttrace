@@ -1,0 +1,12 @@
+# GT_TLS: "internal" (private CA, default) or an e-mail address for public ACME certificates.
+{$GT_DOMAIN} {
+	tls {$GT_TLS:internal}
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		-Server
+	}
+	reverse_proxy frontend:8080 {
+		flush_interval -1
+	}
+}

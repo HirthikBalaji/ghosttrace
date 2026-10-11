@@ -28,7 +28,11 @@ NODE_INDEXES = [
     ("SchemaVersion", "version"),
     ("Workspace", "id"),
 ]
-UNIQUE = [
+# Historical: unique constraints created by migration 1 before 2026-10-11. FalkorDB v4.22.0 with AOF
+# persistence crashes on the second restart after a graph that had a unique constraint is deleted
+# (DECISIONS D-027, docs/upstream/falkordb-aof-unique-constraint-crash.md). Uniqueness is enforced by MERGE on
+# stable ids instead; migration 3 removes existing constraints and compacts the AOF.
+LEGACY_UNIQUE = [
     ("Entity", "id"),
     ("SourceRecord", "source_id"),
     ("Investigation", "id"),
@@ -57,8 +61,6 @@ def migration_1(client: GraphClient, ws: str) -> None:
     for t in ALL_FACT_EDGE_TYPES:
         for prop in EDGE_INDEX_PROPS:
             _ignore_exists(functools.partial(g.create_edge_range_index, t, prop))
-    for label, prop in UNIQUE:
-        _ignore_exists(functools.partial(g.create_node_unique_constraint, label, prop))
 
 
 def migration_2(client: GraphClient, ws: str) -> None:
@@ -73,7 +75,31 @@ def migration_2(client: GraphClient, ws: str) -> None:
                     raise
 
 
-MIGRATIONS: list[tuple[int, Callable[[GraphClient, str], None]]] = [(1, migration_1), (2, migration_2)]
+def _unique_constraints(g: object) -> list[tuple[str, tuple[str, ...]]]:
+    rows = g.list_constraints()  # type: ignore[attr-defined]  # falkordb 1.7.1: list of dicts
+    return [(r["label"], tuple(r["properties"])) for r in rows if r["type"] == "UNIQUE" and r["entitytype"] == "NODE"]
+
+
+def migration_3(client: GraphClient, ws: str) -> None:
+    """Drop legacy unique constraints (FalkorDB AOF-replay crash, D-027), then compact the AOF so the
+    constraint history no longer appears in the incremental log."""
+    g = client._g(ws)
+    present = set(_unique_constraints(g))
+    for label, prop in LEGACY_UNIQUE:
+        if (label, (prop,)) in present:
+            g.drop_node_unique_constraint(label, prop)
+    for _ in range(100):
+        if not _unique_constraints(g):
+            break
+        time.sleep(0.05)
+    client.compact_aof()
+
+
+MIGRATIONS: list[tuple[int, Callable[[GraphClient, str], None]]] = [
+    (1, migration_1),
+    (2, migration_2),
+    (3, migration_3),
+]
 CURRENT_SCHEMA_VERSION = MIGRATIONS[-1][0]
 
 

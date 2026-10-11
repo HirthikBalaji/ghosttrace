@@ -4,16 +4,18 @@ import type { Route } from "../App";
 import { PathChips, State, StatusBadge, Synthetic, useAsync } from "../components/common";
 import { ParetoChart } from "../components/ParetoChart";
 import { AdvisorCard, type Advisor } from "../components/Advisor";
+import { ApprovalPanel } from "../components/Approval";
+import type { Me } from "../App";
 import type { Action, Certificate, GraphData, ParetoPoint } from "../types";
 
 interface ContainmentData {
   planner: { pareto: ParetoPoint[]; sensitivity: any[]; baseline_b0: any; explanation: string; certificate_ids: string[]; advisor?: Advisor } | null;
-  plans: { plan_id: string; k: number; status: string; actions: Action[]; total: number | null; optimality: string; certificate_id?: string; iterations: number; nogoods: string[][]; elapsed_ms: number }[];
+  plans: { plan_id: string; k: number; status: string; actions: Action[]; total: number | null; optimality: string; certificate_id?: string; iterations: number; nogoods: string[][]; elapsed_ms: number; approval_status?: "approved" | "rejected"; approved_by?: string; rejected_by?: string; decided_at?: number; decision_note?: string; execution?: string }[];
   certificates: { certificate_id: string; status: string; k_certified: number; statement: string }[];
   red_team: { findings: any[]; nominations: any[]; tampering_scenarios: any[]; downgraded_certificate_ids: string[] } | null;
 }
 
-export function ContainmentPage({ invId, go }: { invId: string; go: (r: Route, inv?: string | null, cert?: string | null) => void }) {
+export function ContainmentPage({ invId, go, me }: { invId: string; go: (r: Route, inv?: string | null, cert?: string | null) => void; me: Me | null }) {
   const d = useAsync(() => api.get<ContainmentData>(`/api/v1/investigations/${invId}/containment`), [invId]);
   const cands = useAsync(() => api.get<Action[]>(`/api/v1/investigations/${invId}/containment/candidates`), [invId]);
   const graph = useAsync(() => api.get<GraphData>(`/api/v1/investigations/${invId}/graph`), [invId]);
@@ -91,6 +93,10 @@ export function ContainmentPage({ invId, go }: { invId: string; go: (r: Route, i
                       <td className="small">{a.reversibility}</td><td><StatusBadge value="simulated" /></td>
                       <td>{scr ? <span className="badge b-bad" title={scr.reason}>⚑ requires human scrutiny</span> : <span className="muted small">—</span>}</td></tr>);
                   })}</tbody></table></div>
+                <div style={{ marginTop: 12 }}>
+                  <ApprovalPanel invId={invId} plan={plan} me={me} onDone={d.reload}
+                    scrutiny={cert?.requires_human_scrutiny.map((x) => x.action_id) ?? []} />
+                </div>
                 {cert && (
                   <div className="grid g2" style={{ marginTop: 12 }}>
                     <div><h3>Assumption frontier</h3>

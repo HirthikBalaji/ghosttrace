@@ -41,6 +41,7 @@ _running: set[str] = set()
 _running_lock = threading.Lock()
 _limiter: RateLimiter | None = None
 
+APPROVAL_FIELDS = ("approval_status", "approved_by", "rejected_by", "decided_at", "decision_note", "execution")
 ACTION_ID_RE = r"^[a-z_]{3,32}:[A-Za-z0-9_.:@>\-]{1,160}$"
 
 
@@ -382,7 +383,12 @@ def containment(inv_id: str, repo: Repo) -> dict[str, Any]:
     return ok(
         {
             "planner": po["output"] if po else None,
-            "plans": [p["payload"] for p in plans],
+            "plans": [
+                p["payload"]
+                | {k: p.get(k) for k in APPROVAL_FIELDS if p.get(k) is not None}
+                | ({"mode": p["mode"]} if p.get("mode") else {})
+                for p in plans
+            ],
             "certificates": certs,
             "red_team": (outs.get("red_team") or {}).get("output"),
         }

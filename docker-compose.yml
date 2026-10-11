@@ -19,6 +19,7 @@ services:
     restart: unless-stopped
 
   backend:
+    image: ghosttrace-backend:local
     build: { context: ., dockerfile: backend/Dockerfile }
     environment:
       GT_FALKORDB_HOST: falkordb
@@ -35,6 +36,7 @@ services:
     restart: unless-stopped
 
   frontend:
+    image: ghosttrace-frontend:local
     build:
       context: .
       dockerfile: frontend/Dockerfile

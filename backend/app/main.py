@@ -32,6 +32,12 @@ MAX_BODY = 256 * 1024
 
 def _resume_all() -> None:
     try:
+        from app.migrate import migrate_all
+
+        migrate_all()
+    except Exception as exc:
+        log.warning(f"startup migrations skipped: {type(exc).__name__}")
+    try:
         c = get_client()
         for ws in c.list_workspaces():
             resumed = resume_stale(Repository(c, ws))
@@ -41,6 +47,15 @@ def _resume_all() -> None:
         log.warning(f"resume on startup skipped: {type(exc).__name__}")
 
 
+def _migrate_only() -> None:
+    try:
+        from app.migrate import migrate_all
+
+        migrate_all()
+    except Exception as exc:
+        log.warning(f"startup migrations skipped: {type(exc).__name__}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     s = get_settings()
@@ -48,6 +63,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     check_settings(s)  # refuse to start with unsafe auth configuration (e.g. production without OIDC)
     if s.run_mode == "inline":  # in queue mode the worker processes own recovery
         threading.Thread(target=_resume_all, daemon=True, name="gt-resume").start()
+    else:
+        threading.Thread(target=_migrate_only, daemon=True, name="gt-migrate").start()
     yield
     log.info("shutdown: draining")
 

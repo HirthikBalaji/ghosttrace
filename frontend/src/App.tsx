@@ -6,6 +6,10 @@ import { ContainmentPage } from "./pages/Containment";
 import { CertificatePage } from "./pages/Certificate";
 import { BrainPage } from "./pages/Brain";
 import { MemoryAuditPage } from "./pages/MemoryAudit";
+import { api } from "./api";
+import { authMode, signOut } from "./auth";
+
+export interface Me { subject: string; roles: string[]; auth_mode: string; warning: string | null }
 
 export type Route = "command" | "investigation" | "hypotheses" | "containment" | "certificate" | "brain" | "memory";
 const NAV: { id: Route; label: string; icon: string; needsInv?: boolean }[] = [
@@ -26,6 +30,8 @@ function readHash(): { route: Route; inv: string | null; cert: string | null } {
 
 export default function App() {
   const [loc, setLoc] = useState(readHash());
+  const [me, setMe] = useState<Me | null>(null);
+  useEffect(() => { api.get<Me>("/api/v1/whoami").then(setMe).catch(() => setMe(null)); }, []);
   useEffect(() => {
     const on = () => setLoc(readHash());
     window.addEventListener("hashchange", on);
@@ -53,7 +59,11 @@ export default function App() {
   return (
     <>
       <a className="skip" href="#main">Skip to content</a>
-      <div className="banner" role="note">SYNTHETIC DEMO — all data is synthetic and every containment action is a simulation. Demo-only authentication.</div>
+      <div className="banner" role="note">
+        {authMode === "oidc"
+          ? "Every containment action is a simulation or a recorded human approval — nothing is executed by this system."
+          : "SYNTHETIC DEMO — all data is synthetic and every containment action is a simulation. Demo-only authentication."}
+      </div>
       <div className="shell">
         <nav className="nav" aria-label="Primary">
           <div className="brand">
@@ -67,13 +77,17 @@ export default function App() {
             </button>
           ))}
           <div className="spacer" />
-          <div className="meta">Workspace <code>demo</code><br />Investigation <code>{inv ?? "—"}</code></div>
+          <div className="meta">
+            Workspace <code>demo</code><br />Investigation <code>{inv ?? "—"}</code><br />
+            {me && <>Signed in as <code>{me.subject}</code><br />Roles: {me.roles.join(", ") || "none"}<br /></>}
+            {authMode === "oidc" && <button className="btn sm" style={{ marginTop: 6 }} onClick={() => signOut()}>Sign out</button>}
+          </div>
         </nav>
         <main id="main" tabIndex={-1}>
           {loc.route === "command" && <CommandCenter onOpen={(id) => go("investigation", id)} />}
           {loc.route === "investigation" && inv && <InvestigationPage invId={inv} go={go} />}
           {loc.route === "hypotheses" && inv && <HypothesesPage invId={inv} />}
-          {loc.route === "containment" && inv && <ContainmentPage invId={inv} go={go} />}
+          {loc.route === "containment" && inv && <ContainmentPage invId={inv} go={go} me={me} />}
           {loc.route === "certificate" && inv && <CertificatePage invId={inv} certId={loc.cert} go={go} />}
           {loc.route === "brain" && <BrainPage />}
           {loc.route === "memory" && <MemoryAuditPage invId={inv} />}

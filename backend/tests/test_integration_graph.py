@@ -27,7 +27,7 @@ pytestmark = pytest.mark.integration
 
 def test_migrations_idempotent(falkor: GraphClient, ws: str):
     repo = Repository(falkor, ws)
-    assert repo.init_schema() == [1, 2]
+    assert repo.init_schema() == [1, 2, 3]
     assert migrate(falkor, ws) == []
     assert current_version(falkor, ws) == CURRENT_SCHEMA_VERSION
     idx = falkor._g(ws).list_indices().result_set
