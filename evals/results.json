@@ -7,7 +7,7 @@
   "falkordb_client": "1.7.1 (pinned)",
   "falkordb_server": "falkordb/falkordb:v4.22.0",
   "provider": "mock (deterministic)",
-  "wall_s": 115.0,
+  "wall_s": 217.6,
   "instances_per_family": 100
  },
  "families": [
@@ -419,8 +419,8 @@
     "not_applicable": 10
    },
    "solver_ms": {
-    "median": 0.42,
-    "p95": 1.09,
+    "median": 0.73,
+    "p95": 1.85,
     "samples": 300
    },
    "failures": []
@@ -814,8 +814,8 @@
     "not_applicable": 8
    },
    "solver_ms": {
-    "median": 0.72,
-    "p95": 2.17,
+    "median": 1.19,
+    "p95": 3.54,
     "samples": 300
    },
    "failures": []
@@ -1209,8 +1209,8 @@
     "not_applicable": 2
    },
    "solver_ms": {
-    "median": 0.68,
-    "p95": 1.89,
+    "median": 1.58,
+    "p95": 5.58,
     "samples": 300
    },
    "failures": []
@@ -1221,29 +1221,29 @@
    "n_mid": 10,
    "mean_edge_versions": 19.2,
    "plan_k1_ms": {
-    "median": 0.58,
-    "p95": 1.08,
+    "median": 1.84,
+    "p95": 1.88,
     "samples": 5
    },
    "replan_cold_ms": {
-    "median": 0.6,
-    "p95": 0.85,
+    "median": 1.92,
+    "p95": 2.05,
     "samples": 5
    },
    "replan_warm_ms": {
-    "median": 0.49,
-    "p95": 0.73,
+    "median": 1.2,
+    "p95": 1.53,
     "samples": 5
    },
-   "speedup_median": 1.24,
+   "speedup_median": 1.61,
    "falkordb_active_snapshot_ms": {
-    "median": 2.19,
-    "p95": 3.64,
+    "median": 6.48,
+    "p95": 8.97,
     "samples": 15
    },
    "falkordb_path_enum_depth6_ms": {
-    "median": 1.01,
-    "p95": 1.91,
+    "median": 3.94,
+    "p95": 7.15,
     "samples": 15
    }
   },
@@ -1251,29 +1251,29 @@
    "n_mid": 20,
    "mean_edge_versions": 44.4,
    "plan_k1_ms": {
-    "median": 2.36,
-    "p95": 2.67,
+    "median": 4.13,
+    "p95": 6.38,
     "samples": 5
    },
    "replan_cold_ms": {
-    "median": 2.15,
-    "p95": 2.81,
+    "median": 4.12,
+    "p95": 4.43,
     "samples": 5
    },
    "replan_warm_ms": {
-    "median": 1.97,
-    "p95": 4.05,
+    "median": 4.99,
+    "p95": 5.56,
     "samples": 5
    },
-   "speedup_median": 1.1,
+   "speedup_median": 0.83,
    "falkordb_active_snapshot_ms": {
-    "median": 4.63,
-    "p95": 5.21,
+    "median": 11.09,
+    "p95": 62.35,
     "samples": 15
    },
    "falkordb_path_enum_depth6_ms": {
-    "median": 1.26,
-    "p95": 2.6,
+    "median": 3.47,
+    "p95": 9.39,
     "samples": 15
    }
   },
@@ -1281,29 +1281,29 @@
    "n_mid": 40,
    "mean_edge_versions": 133.4,
    "plan_k1_ms": {
-    "median": 9.42,
-    "p95": 9.59,
+    "median": 11.67,
+    "p95": 15.6,
     "samples": 5
    },
    "replan_cold_ms": {
-    "median": 8.15,
-    "p95": 9.12,
+    "median": 11.13,
+    "p95": 13.11,
     "samples": 5
    },
    "replan_warm_ms": {
-    "median": 5.11,
-    "p95": 6.08,
+    "median": 8.48,
+    "p95": 8.74,
     "samples": 5
    },
-   "speedup_median": 1.6,
+   "speedup_median": 1.31,
    "falkordb_active_snapshot_ms": {
-    "median": 11.77,
-    "p95": 14.16,
+    "median": 17.57,
+    "p95": 21.2,
     "samples": 15
    },
    "falkordb_path_enum_depth6_ms": {
-    "median": 13.85,
-    "p95": 21.39,
+    "median": 22.23,
+    "p95": 33.27,
     "samples": 15
    }
   },
@@ -1311,29 +1311,29 @@
    "n_mid": 80,
    "mean_edge_versions": 423.8,
    "plan_k1_ms": {
-    "median": 20.97,
-    "p95": 27.04,
+    "median": 36.34,
+    "p95": 43.41,
     "samples": 5
    },
    "replan_cold_ms": {
-    "median": 17.05,
-    "p95": 17.76,
+    "median": 28.08,
+    "p95": 29.14,
     "samples": 5
    },
    "replan_warm_ms": {
-    "median": 15.19,
-    "p95": 21.64,
+    "median": 24.85,
+    "p95": 35.29,
     "samples": 5
    },
-   "speedup_median": 1.12,
+   "speedup_median": 1.13,
    "falkordb_active_snapshot_ms": {
-    "median": 33.9,
-    "p95": 42.07,
+    "median": 54.96,
+    "p95": 64.38,
     "samples": 15
    },
    "falkordb_path_enum_depth6_ms": {
-    "median": 31.0,
-    "p95": 39.94,
+    "median": 48.65,
+    "p95": 61.66,
     "samples": 15
    }
   },
@@ -1341,29 +1341,29 @@
    "n_mid": 160,
    "mean_edge_versions": 1456.8,
    "plan_k1_ms": {
-    "median": 130.32,
-    "p95": 132.88,
+    "median": 204.21,
+    "p95": 215.18,
     "samples": 5
    },
    "replan_cold_ms": {
-    "median": 117.62,
-    "p95": 121.07,
+    "median": 194.8,
+    "p95": 213.69,
     "samples": 5
    },
    "replan_warm_ms": {
-    "median": 103.83,
-    "p95": 108.75,
+    "median": 184.88,
+    "p95": 191.89,
     "samples": 5
    },
-   "speedup_median": 1.13,
+   "speedup_median": 1.05,
    "falkordb_active_snapshot_ms": {
-    "median": 127.45,
-    "p95": 137.28,
+    "median": 207.2,
+    "p95": 237.31,
     "samples": 15
    },
    "falkordb_path_enum_depth6_ms": {
-    "median": 60.12,
-    "p95": 68.3,
+    "median": 88.8,
+    "p95": 105.4,
     "samples": 15
    }
   }

@@ -40,7 +40,17 @@ rows: 2026-10-11. Environment: macOS arm64 laptop, FalkorDB v4.22.0 in Docker.
 | 0 known vulnerabilities in dependencies | `pip-audit` ("No known vulnerabilities found"), `npm audit` (0) at build time | verified (point in time) |
 | Read-only MCP server exposes only allowlisted, validated tools; no writes | `test_mcp_tools_are_readonly_and_validated`, `test_mcp_stdio_roundtrip` | verified |
 | Streaming progress via server-sent events (also through nginx) | `test_progress_events_stream`; manual `curl -N` through the Compose stack | verified |
-| CI configuration | `.github/workflows/ci.yml` | **unverified on GitHub** — no remote; the same commands were run locally via `make` |
+| Model advisor: AI proposals are simulated/certified; wrong ones rejected with reasons, hallucinated ids rejected | `test_pipeline_through_real_provider_path_with_advisor_gate` (real provider code path via mock transport), e2e | verified (live model run not performed: needs an API key) |
+| Claude provider request shape: `claude-opus-5-5`, closed JSON schema, refusal fallbacks; refusals/malformed/auth/rate-limit are handled errors | `tests/test_claude_provider.py` | verified (offline) |
+| OIDC auth: JWKS, asymmetric-only, required claims; `alg=none`, key confusion, expired, wrong aud/iss rejected; roles and workspace claims enforced | `tests/test_auth_production.py` | verified |
+| Production refuses demo auth | `test_production_refuses_demo_auth` | verified |
+| Approval gates: four-eyes, verifier re-check, scrutiny acknowledgement, tampered certificate refused | `test_approval_gates`, e2e | verified |
+| Queue mode: CAS claim (one of two workers), worker completes investigation | `test_queue_mode_worker`; production profile smoke | verified |
+| Rate limits shared across replicas | `test_rate_limiter_shared_across_replicas` | verified (fake shared store) |
+| Production profile end to end (HTTPS, OIDC, workers, four-eyes, password-protected FalkorDB not on host) | manual smoke 2026-10-11, recorded in docs/operations.md | verified locally with a test signing key; not against a commercial IdP |
+| FalkorDB v4.22.0 AOF crash-loop after deleting a graph with a unique constraint; workaround prevents it | `scripts/repro/falkordb_aof_unique_constraint.sh`, `test_workspace_delete_then_restarts_does_not_crash`, `test_legacy_constraints_removed_by_migration_3` | verified (cause hypothesis unverified in FalkorDB source) |
+| AOF recovery script restores a crash-looping volume from its RDB snapshot | run on the affected dev volume 2026-10-11 | verified (writes after the last RDB save are lost) |
+| CI configuration | `.github/workflows/ci.yml` | verified: green on GitHub (backend, frontend, secrets jobs) |
 
 ## Quantitative claims (from `evals/report.md`, generated 2026-10-11, 100 instances per family)
 

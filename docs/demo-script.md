@@ -1,5 +1,8 @@
 # Demo script (≈3½ minutes)
 
+Shortest version: open **Story mode** and walk the seven steps. Each step's "See the evidence" button jumps to the
+detailed view. A silent recording of the walkthrough is in `docs/demo/ghosttrace-demo.webm`.
+
 **Setup.** Run `docker compose up -d --build` and open http://localhost:8080, or use `make api` and `make web`.
 Everything shown is synthetic, and every action is a simulation. This script was rehearsed: the Playwright test
 `frontend/e2e/demo.spec.ts` runs the same steps and passed against both the dev stack and the Compose stack.
@@ -13,6 +16,7 @@ Everything shown is synthetic, and every action is a simulation. This script was
 | 0:55 | Hypotheses page | The verifier flags RB-7 ("disable the account") as written before the CI credential existed. The rotation log is from the compromised host, so R2 disputes the edge instead of removing it. The duplicate SIEM alerts count as one root. The prior-incident "benign" memory is disputed. |
 | 1:25 | Containment page | B0: disabling dev-alice leaves a **residual CONFIRMED path**. The **Price of Certainty** curve shows costs 3, 10 and 14 for k = 0, 1 and 2. |
 | 1:45 | Click the k=1 point | Assumption frontier: the witness path plus "verify these edges first". `remove grant ws-alice→shared-config` is flagged **requires human scrutiny**. R4: it appears only under `conservative_defense` because a planted alert drives it. |
+| 2:00 | Containment → **Model advisor** card | "The AI proposes, the graph disposes." Disabling the account is rejected (a confirmed path survives); isolating what the alerts name is rejected (a confirmed path still survives and it breaks a hard flow); rotating the credential is accepted at the certified optimum. |
 | 2:05 | **Open certificate → Verify with independent verifier** | ACCEPTED (exit code 0) from a separate stdlib-only process. Show the statement, assumptions, limitations and load-bearing evidence: "if the IAM revocation record were false, a confirmed path survives." |
 | 2:20 | Company Brain → **Compare: as known then vs as known now** | `team:payments` (stale CMDB record) as known then; `team:platform` (backfilled reorg) as known now. The undated SRE wiki claim is flagged. |
 | 2:45 | Memory & audit | The episodic memory and the promoted semantic memory (6 independent roots). False-flag and injection memories are **tainted**. Handoffs and the audit trail are listed. Then restart: `docker compose restart backend` — the investigation and memory are all still there. |

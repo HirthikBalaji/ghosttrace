@@ -1,8 +1,13 @@
 # Security policy
 
-GHOSTTRACE is a **synthetic demo**. It ships with demo-only authentication (a shared header token that fails
-closed if unset). It has no TLS and no per-user authorisation. Run it only on a trusted local machine. Every
-containment action is a simulation; the software never touches real systems.
+GHOSTTRACE never touches real systems: every containment action is a simulation, and approval only records a human
+authorisation. Two profiles:
+
+- **Local/demo** (`docker-compose.yml`): shared `X-GT-Demo-Token` header (fails closed if unset), no TLS, all roles.
+  Trusted single machine only.
+- **Production** (`docker-compose.prod.yml`): OIDC bearer tokens verified against the IdP's JWKS (asymmetric
+  algorithms only; `iss`/`aud`/`exp`/`iat`/`sub` required), role- and workspace-based authorisation, HTTPS via Caddy
+  with HSTS, password-protected FalkorDB not exposed on the host. `GT_ENV=production` refuses demo auth.
 
 - **Secrets.** Configuration comes only from environment variables (`.env.example` holds placeholders). `.env`
   is git-ignored, and `scripts/secret_scan.sh` runs in CI. Logs redact token- and key-like values. Memory

@@ -12,7 +12,7 @@
 - falkordb_client: `1.7.1 (pinned)`
 - falkordb_server: `falkordb/falkordb:v4.22.0`
 - provider: `mock (deterministic)`
-- wall_s: `115.0`
+- wall_s: `217.6`
 - instances_per_family: `100`
 
 ## Headline
@@ -40,7 +40,7 @@ Parameters: `{"n_mid": 6, "n_paths": 2, "branching": 1.2, "latent_density": 0.12
 - Verifier mutation testing: {'applied': 268, 'killed': 268, 'equivalent_identical': 7, 'not_applicable': 10}
 - Temporal/R2 correctness on churned facts: 1.000 [0.95, 1.00] (n=79)
 - Citation resolution (action evidence ids resolve to stored records): 1.000 [1.00, 1.00] (n=963)
-- Solver time per plan (ms): {'median': 0.42, 'p95': 1.09, 'samples': 300}
+- Solver time per plan (ms): {'median': 0.73, 'p95': 1.85, 'samples': 300}
 
 Robustness calibration (fraction of GHOSTTRACE plans reopened in modeled W*, by reopening distance d; valid only under the generator's synthetic prior p_latent_true):
 
@@ -72,7 +72,7 @@ Parameters: `{"n_mid": 10, "n_paths": 2, "branching": 1.2, "latent_density": 0.1
 - Verifier mutation testing: {'applied': 272, 'killed': 272, 'equivalent_identical': 5, 'not_applicable': 8}
 - Temporal/R2 correctness on churned facts: 1.000 [0.97, 1.00] (n=124)
 - Citation resolution (action evidence ids resolve to stored records): 1.000 [1.00, 1.00] (n=1100)
-- Solver time per plan (ms): {'median': 0.72, 'p95': 2.17, 'samples': 300}
+- Solver time per plan (ms): {'median': 1.19, 'p95': 3.54, 'samples': 300}
 
 Robustness calibration (fraction of GHOSTTRACE plans reopened in modeled W*, by reopening distance d; valid only under the generator's synthetic prior p_latent_true):
 
@@ -105,7 +105,7 @@ Parameters: `{"n_mid": 10, "n_paths": 2, "branching": 1.2, "latent_density": 0.1
 - Verifier mutation testing: {'applied': 281, 'killed': 281, 'equivalent_identical': 2, 'not_applicable': 2}
 - Temporal/R2 correctness on churned facts: 1.000 [0.97, 1.00] (n=124)
 - Citation resolution (action evidence ids resolve to stored records): 1.000 [1.00, 1.00] (n=1030)
-- Solver time per plan (ms): {'median': 0.68, 'p95': 1.89, 'samples': 300}
+- Solver time per plan (ms): {'median': 1.58, 'p95': 5.58, 'samples': 300}
 
 Robustness calibration (fraction of GHOSTTRACE plans reopened in modeled W*, by reopening distance d; valid only under the generator's synthetic prior p_latent_true):
 
@@ -122,11 +122,11 @@ Failures listed (0):
 
 | n_mid | mean edge versions | plan k=1 ms (median/p95) | replan cold | replan warm | speedup | FalkorDB snapshot query ms | FalkorDB path enum (depth 6) ms |
 |---|---|---|---|---|---|---|---|
-| 10 | 19.2 | 0.58 / 1.08 (n=5) | 0.6 / 0.85 (n=5) | 0.49 / 0.73 (n=5) | 1.24× | 2.19 / 3.64 (n=15) | 1.01 / 1.91 (n=15) |
-| 20 | 44.4 | 2.36 / 2.67 (n=5) | 2.15 / 2.81 (n=5) | 1.97 / 4.05 (n=5) | 1.1× | 4.63 / 5.21 (n=15) | 1.26 / 2.6 (n=15) |
-| 40 | 133.4 | 9.42 / 9.59 (n=5) | 8.15 / 9.12 (n=5) | 5.11 / 6.08 (n=5) | 1.6× | 11.77 / 14.16 (n=15) | 13.85 / 21.39 (n=15) |
-| 80 | 423.8 | 20.97 / 27.04 (n=5) | 17.05 / 17.76 (n=5) | 15.19 / 21.64 (n=5) | 1.12× | 33.9 / 42.07 (n=15) | 31.0 / 39.94 (n=15) |
-| 160 | 1456.8 | 130.32 / 132.88 (n=5) | 117.62 / 121.07 (n=5) | 103.83 / 108.75 (n=5) | 1.13× | 127.45 / 137.28 (n=15) | 60.12 / 68.3 (n=15) |
+| 10 | 19.2 | 1.84 / 1.88 (n=5) | 1.92 / 2.05 (n=5) | 1.2 / 1.53 (n=5) | 1.61× | 6.48 / 8.97 (n=15) | 3.94 / 7.15 (n=15) |
+| 20 | 44.4 | 4.13 / 6.38 (n=5) | 4.12 / 4.43 (n=5) | 4.99 / 5.56 (n=5) | 0.83× | 11.09 / 62.35 (n=15) | 3.47 / 9.39 (n=15) |
+| 40 | 133.4 | 11.67 / 15.6 (n=5) | 11.13 / 13.11 (n=5) | 8.48 / 8.74 (n=5) | 1.31× | 17.57 / 21.2 (n=15) | 22.23 / 33.27 (n=15) |
+| 80 | 423.8 | 36.34 / 43.41 (n=5) | 28.08 / 29.14 (n=5) | 24.85 / 35.29 (n=5) | 1.13× | 54.96 / 64.38 (n=15) | 48.65 / 61.66 (n=15) |
+| 160 | 1456.8 | 204.21 / 215.18 (n=5) | 194.8 / 213.69 (n=5) | 184.88 / 191.89 (n=5) | 1.05× | 207.2 / 237.31 (n=15) | 88.8 / 105.4 (n=15) |
 
 ## How to read this / limitations
 

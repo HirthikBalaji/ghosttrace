@@ -8,11 +8,13 @@ dependencies. It also challenges its own hypotheses and synthesises minimum-disr
 Each plan ships with a **machine-checkable certificate** that states its assumptions, and an independent
 stdlib-only verifier checks it. Specialised agents coordinate through durable shared memory in the same graph.
 
-> **SYNTHETIC DEMO.** All data is synthetic. Every containment action is a *simulation*: there is no
-> "executed" state. Authentication is a demo-only shared header token, not production auth. Run it only in a
-> trusted local environment.
+> **No action is ever executed.** Every containment action is a *simulation*; a human approver can record an
+> authorisation, but this build has no executor. The bundled scenarios are synthetic. The local profile uses a
+> demo-only header token; the production profile requires OIDC (see [Production deployment](#production-deployment)).
 
-![Containment planner](docs/screenshots/3-containment.png)
+![Story mode](docs/screenshots/0-story.png)
+
+Demo video (silent walkthrough): [`docs/demo/ghosttrace-demo.webm`](docs/demo/ghosttrace-demo.webm).
 
 ## What it does (one integrated workflow, three tracks)
 
@@ -30,6 +32,20 @@ The headline scenario, **The Ghost Credential**, works like this:
 - A 1-robust plan costs 10 and a 2-robust plan costs 14.
 - An attacker-written "token rotated" log does **not** remove the edge (R2).
 - A planted alert's suggested action is flagged `requires_human_scrutiny`, and the trust-filtered plan differs (R3/R4).
+- **The AI proposes, the graph disposes.** A model advisor (Claude, or a deterministic mock offline) proposes plans.
+  Each is simulated and certified: "disable the account" and "isolate whatever the alerts name" are rejected with the
+  surviving path or broken hard flow; "rotate the exposed credential" is accepted at the certified optimum.
+
+## Using a real model
+
+```bash
+export ANTHROPIC_API_KEY=...            # or `ant auth login`
+GT_LLM_PROVIDER=anthropic GT_LLM_MODEL=claude-opus-5-5 make api
+```
+
+The model only summarises, explains, nominates latent edges and proposes plans; its output is schema-constrained,
+re-validated, and every proposal goes through the same simulation and certificate check. Tests and the default demo
+use the deterministic mock and need no key.
 
 ## Quick start
 
@@ -65,10 +81,29 @@ GT_RUN_DOCKER_TESTS=1 make test   # also runs the FalkorDB container-restart rec
 make evals          # regenerates evals/report.md; exits non-zero on any soundness violation
 make audit secrets  # pip-audit, npm audit, secret scan
 make reset          # re-seed the demo workspace
+cd backend && uv run python -m app.worker   # queue-mode worker (GT_RUN_MODE=queue)
+scripts/recover_falkordb_aof.sh     # recover a FalkorDB volume whose AOF cannot be replayed
 scripts/smoke_api.sh                # end-to-end API smoke test (GT_DEMO_TOKEN must match the API)
 python -m verifier check cert.json edges.jsonl   # independent verifier CLI (from repo root)
 cd backend && GT_MCP_WORKSPACE=demo uv run python -m app.mcp_server   # read-only MCP server (stdio)
 ```
+
+## Production deployment
+
+```bash
+cp .env.example .env.prod   # fill GT_DOMAIN, GT_TLS, GT_FALKORDB_PASSWORD, GT_OIDC_* (see docs/operations.md)
+docker compose --env-file .env.prod -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+```
+
+- HTTPS via Caddy (`GT_TLS=internal` for a private CA, or an e-mail address for public ACME certificates).
+- OIDC bearer tokens (authorization code + PKCE in the UI); roles `viewer`/`analyst`/`approver`/`admin` and
+  permitted workspaces come from token claims. `GT_ENV=production` refuses to start with any other auth mode.
+- FalkorDB password-protected and not published on the host; AOF + RDB persistence; schema migrations run at start.
+- Investigations run on `worker` replicas (`python -m app.worker`); rate limits are shared across replicas.
+- Approvals: four-eyes, the independent verifier re-checks the certificate, scrutiny-flagged actions need explicit
+  acknowledgement. Nothing is executed.
+
+Verified on 2026-10-11 by bringing this profile up locally with a test signing key (see the claims ledger).
 
 ## Repository map
 
@@ -91,6 +126,7 @@ scripts/           seed, smoke test, env check, profiling, backup/restore, secre
 [The hard problem](docs/hard-problem.md) · [Why FalkorDB](docs/why-falkordb.md) · [API](docs/api.md) ·
 [Threat model](docs/threat-model.md) · [Evaluation](docs/evaluation.md) and [report](evals/report.md) ·
 [Performance](docs/performance.md) · [Operations](docs/operations.md) · [Demo script](docs/demo-script.md) ·
+[Judge FAQ](docs/judge-faq.md) · [FalkorDB bug report](docs/upstream/falkordb-aof-unique-constraint-crash.md) ·
 [Claims ledger](docs/claims-ledger.md) · [Decisions](DECISIONS.md) · [Progress](PROGRESS.md) · [Security](SECURITY.md)
 
 ## What this does *not* claim

@@ -1,8 +1,7 @@
 # Progress
 
-Last updated 2026-10-11. **Degradation level reached: all four levels (A–D) are implemented, with their gates
-met by commands run locally.** CI exists as `.github/workflows/ci.yml` but has **not** run on GitHub, because the
-repository has no remote. The same commands were run locally through `make`.
+Last updated 2026-10-11. **Degradation level reached: all four levels (A–D) are implemented, with their gates met by commands run
+locally.** CI (`.github/workflows/ci.yml`) is green on GitHub.
 
 | # | Milestone | Status | Gate evidence (commands actually run) |
 |---|---|---|---|
@@ -40,10 +39,29 @@ scripts/smoke_api.sh http://localhost:8080 (Compose) → SMOKE OK
 backup → delete graph → restore → investigation restored
 ```
 
+## Hardening round (2026-10-11, second pass)
+
+| Item | Status | Evidence |
+|---|---|---|
+| Claude provider (official SDK) + model advisor gate | done | `tests/test_claude_provider.py` (10 tests, offline); e2e |
+| OIDC/JWT auth, roles, workspace claims, production fail-closed | done | `tests/test_auth_production.py` |
+| Approval workflow (four-eyes, verifier re-check, scrutiny acknowledgement) | done | `test_approval_gates`; e2e |
+| Queue-mode workers, shared rate limits | done | `test_queue_mode_worker`, `test_rate_limiter_shared_across_replicas` |
+| Production compose (Caddy TLS, password-protected FalkorDB, worker replicas) | done | local HTTPS smoke, recorded in `docs/operations.md` |
+| FalkorDB AOF crash-loop: found, reproduced, worked around, recovery script, regression tests | done | `docs/upstream/falkordb-aof-unique-constraint-crash.md`; `tests/test_docker_persistence.py` (3 passed) |
+| Story mode, demo video, judge FAQ | done | `docs/demo/ghosttrace-demo.webm`, `docs/judge-faq.md`; e2e |
+| Evals regenerated on final code | done | `evals/report.md`: 0 soundness violations / 900 certificates |
+
+Latest local run: 112 passed (3 Docker restart tests opt-in, passed with `GT_RUN_DOCKER_TESTS=1`); ruff, mypy strict,
+tsc clean; e2e passed against the Compose stack. CI on GitHub: green.
+
 ## Not done / blocked
 
-- **GitHub Actions has not run** (no remote; pushing is out of scope). The workflow is untested on GitHub runners.
-- **No real authentication** (demo token only, by design for this build) and no TLS.
+- **No real-data validation.** All data is synthetic; an exporter from a real environment into the ingestion format
+  is not included.
+- **No live model run recorded** (needs an Anthropic API key); the real provider code path is tested offline.
+- **Production auth verified with a test signing key**, not against a specific commercial IdP.
+- **No executor** for containment actions, by design.
 - **No screen-reader manual audit**; accessibility checks are automated (axe) only.
-- **No demo recording**; screenshots are in `docs/screenshots/`.
+- **Demo video is silent** (no narration).
 - FalkorDB graph procedures (`algo.*`) are not used (see docs/why-falkordb.md).

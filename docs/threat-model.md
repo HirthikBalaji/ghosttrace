@@ -1,6 +1,7 @@
 # Threat model (STRIDE + LLM-specific)
 
-Scope: a local, single-tenant-per-workspace synthetic demo. It is not hardened for internet exposure.
+Scope: both profiles. The local profile is a single-machine demo; the production profile (OIDC, TLS, workers) is the
+one to expose to users. Neither executes containment actions.
 
 | Adversary | Threat (STRIDE) | Controls implemented | Evidence |
 |---|---|---|---|
@@ -12,14 +13,16 @@ Scope: a local, single-tenant-per-workspace synthetic demo. It is not hardened f
 | Supply chain | Malicious or typosquatted packages | Exact pins (`uv.lock`, `package-lock.json`), minimal dependencies (verifier: stdlib only), `pip-audit` + `npm audit` in CI | `make audit` (0 known vulnerabilities at build time) |
 | Certificate forger | Tampering / repudiation | Snapshot hash binds header, edges and costs. The independent verifier recomputes κ, reachability, d, flows, cost and small-instance optimality. Mutation-tested | `verifier/tests`, eval mutation kill counts |
 | Model misbehaviour | Fabricated facts or ids, malformed output | The model never creates facts or verdicts. Output is Pydantic-validated, and every cited id is checked against graph results. Malformed output is a handled `model` failure, retried once and then surfaced (never faked) | `test_malformed_model_output_fails_honestly` |
-| Local network user | Spoofing | Demo-only token header, constant-time compare, **fails closed** when unset. Ports bind to 127.0.0.1 in Compose. CORS restricted to configured origins | `test_auth_fails_closed` |
+| Unauthenticated / wrong-tenant user | Spoofing / elevation | Production: OIDC JWT verified against JWKS, asymmetric algorithms only, `iss`/`aud`/`exp`/`iat`/`sub` required, `alg=none` and HS/RS key confusion rejected; roles and workspace allowlist from claims; `GT_ENV=production` refuses demo auth. Local: demo token, constant-time compare, fails closed. CORS restricted | `tests/test_auth_production.py`, `test_auth_fails_closed` |
+| Insider pushing a bad plan | Elevation / repudiation | Approval needs the `approve` role, four-eyes (creator cannot approve), verifier re-check at approval time, explicit acknowledgement of scrutiny-flagged actions; audit trail with subject; no executor | `test_approval_gates` |
 
 ## Residual risks (not mitigated)
 
-- **No real authentication or authorisation.** The token is shared and there are no per-user roles. Do not
-  deploy beyond a trusted local machine.
-- **No TLS** in the demo stack.
+- **Local profile** has no real authentication and no TLS; use the production profile beyond a single machine.
+- The production profile has been verified with a test signing key, not against a specific commercial IdP.
+- Rate limits use fixed one-minute windows (bursts at window edges are possible).
+- FalkorDB AOF crash-loop on deleted constrained graphs (upstream bug, worked around; recovery script provided).
 - The injection detector is heuristic. The structural controls are the boundary; the detector is only a
   tripwire.
 - Attacker-influenceable labelling depends on a correct declared threat model.
-- The in-process rate limiter resets on restart and is per process.
+- If FalkorDB is unreachable, rate limiting falls back to a per-process bucket.
