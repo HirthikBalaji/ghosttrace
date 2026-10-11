@@ -162,9 +162,12 @@ def solve(edges: list[SnapEdge], sources: Sequence[str], targets: Sequence[str],
         cutsets.append(cut)
         return cut
 
-    # Warm start: re-validate prior constraints and nogoods against the new snapshot.
+    # Warm start: re-validate prior constraints and nogoods against the new snapshot. A counterexample
+    # path is a valid constraint at level k only if it still exists and has <= k non-confirmed edges
+    # under the *current* classification (evidence may have changed).
+    by_id = {e.edge_id: e for e in edges}
     for c in warm_constraints:
-        if set(c.path) <= edge_ids:
+        if set(c.path) <= edge_ids and sum(1 for x in c.path if not by_id[x].confirmed) <= k:
             add_constraint(c.path)
     nogoods: list[frozenset[int]] = []
     for ng in warm_nogoods:
