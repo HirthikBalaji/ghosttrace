@@ -13,3 +13,4 @@ frontend/playwright-report/
 .env
 *.log
 .DS_Store
+backups/

@@ -531,6 +531,9 @@ def write_report(res: dict[str, Any], path: Path) -> None:
         " B2 = static min-cost cut ignoring time, trust and must-keep flows; B3 = mock LLM-only recommender (no graph verification).",
         "- 'Residual exposure (incl. unmodeled)' counts hidden edges no system could see; certificates explicitly exclude them by assumption, so this rate is expected to be non-zero for every method.",
         "- Residual exposure in *modeled* W* for GHOSTTRACE comes from hidden-true latent edges; it falls as k rises, which is the measured Price-of-Certainty trade-off.",
+        "- 'Regret vs optimum' is measured against the brute-force k=0 optimum (small family only). For GT_k0 it is true "
+        "suboptimality; for GT_k1/GT_k2 it is the extra cost paid for robustness (the Price of Certainty), not an error.",
+        "- Incremental replanning reuses re-validated constraints/nogoods; measured speedups are modest (see scaling table).",
         "- Costs are seeded integers, not business impact. Generated latent edges bypass template preconditions (documented).",
         "- Soundness here means: no path made only of edges the system classified CONFIRMED survives in W* after the plan.",
         "",

@@ -1,0 +1,54 @@
+name: ci
+on: [push, pull_request]
+permissions: { contents: read }
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    services:
+      falkordb:
+        image: falkordb/falkordb:v4.22.0
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s --health-timeout 3s --health-retries 20
+    env: { GT_FALKORDB_HOST: localhost, GT_FALKORDB_PORT: "6379", GT_DEMO_TOKEN: ci-demo-token }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.12.5" }
+      - run: cd backend && uv sync --frozen --python 3.12
+      - name: lint + format
+        run: cd backend && uv run ruff check app tests ../verifier ../evals && uv run ruff format --check app tests ../verifier ../evals
+      - name: typecheck (mypy strict)
+        run: cd backend && uv run mypy app ../verifier
+      - name: unit, property, integration tests (real FalkorDB)
+        run: cd backend && uv run pytest -p no:warnings
+      - name: evals with soundness gate (exit 1 on any violation)
+        run: cd backend && uv run python ../evals/run_evals.py --n 60 --falkordb
+      - name: dependency audit
+        run: cd backend && uv export --frozen --no-hashes --format requirements-txt > /tmp/req.txt && uv run pip-audit -r /tmp/req.txt
+      - uses: actions/upload-artifact@v4
+        with: { name: eval-report, path: "evals/report.md" }
+  frontend:
+    runs-on: ubuntu-24.04
+    needs: backend
+    services:
+      falkordb:
+        image: falkordb/falkordb:v4.22.0
+        ports: ["6379:6379"]
+        options: --health-cmd "redis-cli ping" --health-interval 5s --health-retries 20
+    env: { GT_DEMO_TOKEN: dev-demo-token }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "22.23" }
+      - uses: astral-sh/setup-uv@v6
+        with: { version: "0.12.5" }
+      - run: cd frontend && npm ci --no-audit --no-fund && npx tsc --noEmit -p tsconfig.json && npx vite build
+      - run: cd frontend && npm audit --omit=dev
+      - run: cd backend && uv sync --frozen --python 3.12 && (uv run uvicorn app.main:app --port 8000 &) && sleep 5
+      - run: cd frontend && npx playwright install --with-deps chromium && npx playwright test
+  secrets:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - run: scripts/secret_scan.sh
