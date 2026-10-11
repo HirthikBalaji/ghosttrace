@@ -23,6 +23,7 @@ from app.graph.client import get_client
 from app.graph.repository import Repository
 from app.graph.schema import CURRENT_SCHEMA_VERSION, current_version
 from app.orchestration.orchestrator import resume_stale
+from app.security.auth import check_settings
 
 log = logging.getLogger("ghosttrace.api")
 METRICS: Counter[str] = Counter()
@@ -42,8 +43,11 @@ def _resume_all() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    configure(get_settings().log_level)
-    threading.Thread(target=_resume_all, daemon=True, name="gt-resume").start()
+    s = get_settings()
+    configure(s.log_level)
+    check_settings(s)  # refuse to start with unsafe auth configuration (e.g. production without OIDC)
+    if s.run_mode == "inline":  # in queue mode the worker processes own recovery
+        threading.Thread(target=_resume_all, daemon=True, name="gt-resume").start()
     yield
     log.info("shutdown: draining")
 

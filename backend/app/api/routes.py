@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
-import subprocess
-import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -26,13 +23,15 @@ from app.ingestion.scenario import list_scenarios, read_scenario
 from app.ingestion.seed import seed
 from app.memory.service import MemoryService
 from app.model import ALL_FACT_EDGE_TYPES, TRAVERSAL_EDGE_TYPES, TrustPolicy
+from app.orchestration.approval import ApprovalError, decide
 from app.orchestration.orchestrator import Orchestrator
 from app.planner import engine
 from app.reasoning.kappa import KappaError
 from app.reasoning.snapshot import build_snapshot
-from app.security.auth import Principal, authenticate
+from app.security.auth import Principal, authenticate, require
 from app.security.injection import safe_text
 from app.security.ratelimit import RateLimiter
+from app.security.verifier_runner import run_verifier
 from app.temporal.predicate import TemporalStatus, parse_iso, temporal_status, to_iso
 
 router = APIRouter()
@@ -48,7 +47,11 @@ ACTION_ID_RE = r"^[a-z_]{3,32}:[A-Za-z0-9_.:@>\-]{1,160}$"
 def limiter() -> RateLimiter:
     global _limiter
     if _limiter is None:
-        _limiter = RateLimiter(get_settings().rate_limit_per_minute)
+        try:
+            redis = get_client().db.connection
+        except Exception:
+            redis = None
+        _limiter = RateLimiter(get_settings().rate_limit_per_minute, redis)
     return _limiter
 
 
@@ -56,12 +59,15 @@ def ok(data: Any, **meta: Any) -> dict[str, Any]:
     return {"data": data, "meta": {"request_id": request_id_var.get(), "synthetic": True, **meta}}
 
 
-def repo_for(p: Annotated[Principal, Depends(authenticate)]) -> Repository:
+def repo_for(p: Annotated[Principal, Depends(require("read"))]) -> Repository:
     return Repository(get_client(), p.workspace_id)
 
 
 Repo = Annotated[Repository, Depends(repo_for)]
 Auth = Annotated[Principal, Depends(authenticate)]
+Operator = Annotated[Principal, Depends(require("operate"))]
+Approver = Annotated[Principal, Depends(require("approve"))]
+Admin = Annotated[Principal, Depends(require("admin"))]
 
 
 def ts(value: str | None, default: int) -> int:
@@ -121,7 +127,7 @@ def scenarios(p: Auth) -> dict[str, Any]:
 
 
 @router.post("/scenarios/{scenario_id}/reset")
-def reset_scenario(scenario_id: str, p: Auth) -> dict[str, Any]:
+def reset_scenario(scenario_id: str, p: Admin) -> dict[str, Any]:
     if scenario_id not in list_scenarios():
         raise HTTPException(status_code=404, detail="unknown scenario")
     limiter().check(f"reset:{p.workspace_id}", 1)
@@ -142,10 +148,10 @@ def list_investigations(repo: Repo, limit: int = Query(20, ge=1, le=100)) -> dic
 
 
 @router.post("/investigations", status_code=201)
-def create_investigation(body: NewInvestigation, repo: Repo) -> dict[str, Any]:
+def create_investigation(body: NewInvestigation, repo: Repo, op: Operator) -> dict[str, Any]:
     _meta(repo)
     try:
-        inv = Orchestrator(repo).create_investigation(body.incident_id, body.K, body.policy)
+        inv = Orchestrator(repo).create_investigation(body.incident_id, body.K, body.policy, created_by=op.subject)
     except LookupError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     return ok(inv)
@@ -169,11 +175,13 @@ def _run_bg(ws: str, inv_id: str) -> None:
 
 
 @router.post("/investigations/{inv_id}/run", status_code=202)
-def run_investigation(inv_id: str, repo: Repo, p: Auth, sync: bool = False) -> dict[str, Any]:
+def run_investigation(inv_id: str, repo: Repo, p: Operator, sync: bool = False) -> dict[str, Any]:
     inv = _inv(repo, inv_id)
     limiter().check(f"run:{p.workspace_id}", 1)
     if inv["status"] in ("completed", "cancelled"):
         return ok({"investigation": inv, "note": f"already {inv['status']}"})
+    if get_settings().run_mode == "queue":  # a separate worker process picks it up
+        return ok({"investigation": Orchestrator(repo).enqueue(inv_id), "note": "queued for a worker"})
     if sync:
         return ok({"investigation": Orchestrator(repo).run(inv_id)})
     with _running_lock:
@@ -217,7 +225,7 @@ def investigation_events(inv_id: str, repo: Repo, max_seconds: int = Query(120, 
 
 
 @router.post("/investigations/{inv_id}/cancel")
-def cancel_investigation(inv_id: str, repo: Repo) -> dict[str, Any]:
+def cancel_investigation(inv_id: str, repo: Repo, op: Operator) -> dict[str, Any]:
     _inv(repo, inv_id)
     n = Orchestrator(repo).cancel(inv_id)
     return ok({"cancelled_tasks": n, "investigation": _inv(repo, inv_id)})
@@ -389,7 +397,7 @@ class SimulateBody(BaseModel):
 
 
 @router.post("/investigations/{inv_id}/containment/simulate")
-def simulate(inv_id: str, body: SimulateBody, repo: Repo, p: Auth) -> dict[str, Any]:
+def simulate(inv_id: str, body: SimulateBody, repo: Repo, p: Operator) -> dict[str, Any]:
     inv = _inv(repo, inv_id)
     limiter().check(f"sim:{p.workspace_id}", 1)
     T_ms, tau_ms = ts(body.T, inv["T_analysis"]), ts(body.tau, inv["tau_analysis"])
@@ -495,34 +503,8 @@ def export_certificate(inv_id: str, cid: str, repo: Repo) -> str:
     return "\n".join(json.dumps(x, sort_keys=True) for x in art["payload"]["export"]) + "\n"
 
 
-def run_verifier(cert: dict[str, Any], lines: list[dict[str, Any]], tag: str) -> dict[str, Any]:
-    """Run the independent verifier as a separate process (stdlib-only package, no app imports)."""
-    d = (REPO_ROOT / get_settings().artifact_dir.replace("../", "")).resolve() / "verify"
-    d.mkdir(parents=True, exist_ok=True)
-    cpath, epath = d / f"{tag}.cert.json", d / f"{tag}.edges.jsonl"
-    cpath.write_text(json.dumps(cert))
-    epath.write_text("\n".join(json.dumps(x) for x in lines) + "\n")
-    env = {"PATH": os.environ.get("PATH", ""), "PYTHONDONTWRITEBYTECODE": "1"}
-    proc = subprocess.run(  # noqa: S603 - fixed argv, no shell; paths are server-generated
-        [sys.executable, "-E", "-s", "-m", "verifier", "check", str(cpath), str(epath)],
-        cwd=str(REPO_ROOT),
-        env=env,
-        capture_output=True,
-        text=True,
-        timeout=60,
-        check=False,
-    )
-    return {
-        "exit_code": proc.returncode,
-        "accepted": proc.returncode == 0,
-        "output": proc.stdout.strip()[:4000],
-        "stderr": proc.stderr.strip()[-1000:],
-        "command": "python -m verifier check cert.json edges.jsonl",
-    }
-
-
 @router.post("/investigations/{inv_id}/certificate/{cid}/verify")
-def verify_certificate(inv_id: str, cid: str, repo: Repo, p: Auth) -> dict[str, Any]:
+def verify_certificate(inv_id: str, cid: str, repo: Repo, p: Operator) -> dict[str, Any]:
     _inv(repo, inv_id)
     art = _cert(repo, inv_id, cid)
     limiter().check(f"verify:{p.workspace_id}", 1)
@@ -534,6 +516,25 @@ def verify_certificate(inv_id: str, cid: str, repo: Repo, p: Auth) -> dict[str, 
         {"certificate_id": cid, "accepted": result["accepted"], "output": result["output"][:500]},
     )
     return ok(result)
+
+
+class Decision(BaseModel):
+    decision: Literal["approved", "rejected"]
+    note: str = Field("", max_length=1000)
+    acknowledge_scrutiny: bool = False
+
+
+@router.post("/investigations/{inv_id}/plans/{plan_id}/decision")
+def decide_plan(inv_id: str, plan_id: str, body: Decision, repo: Repo, p: Approver) -> dict[str, Any]:
+    """Record a human approval/rejection of a certified plan. Nothing is executed (this build has no executor)."""
+    inv = _inv(repo, inv_id)
+    if len(plan_id) > 40:
+        raise HTTPException(status_code=422, detail="invalid plan id")
+    limiter().check(f"decide:{p.workspace_id}", 1)
+    try:
+        return ok(decide(repo, inv, plan_id, p, body.decision, body.note, body.acknowledge_scrutiny))
+    except ApprovalError as exc:
+        raise HTTPException(status_code=exc.status, detail=str(exc) + (f": {exc.details}" if exc.details else "")) from exc
 
 
 @router.get("/investigations/{inv_id}/evidence/load-bearing")
@@ -674,6 +675,7 @@ def whoami(p: Auth, request: Request) -> dict[str, Any]:
             "subject": p.subject,
             "workspace_id": p.workspace_id,
             "auth_mode": p.mode,
-            "warning": "demo-only authentication; not production auth",
+            "roles": sorted(p.roles),
+            "warning": None if p.mode == "oidc" else "demo-only authentication; not production auth",
         }
     )

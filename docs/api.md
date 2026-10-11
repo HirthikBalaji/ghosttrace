@@ -62,6 +62,7 @@ asserts the route list below equals the OpenAPI route list).
 | `GET /api/v1/investigations/{inv_id}/certificate/{cid}` | Certificate JSON. |
 | `GET /api/v1/investigations/{inv_id}/certificate/{cid}/export` | Canonical snapshot export (JSON Lines) bound by the certificate's hash. |
 | `POST /api/v1/investigations/{inv_id}/certificate/{cid}/verify` | Runs `python -m verifier check cert.json edges.jsonl` **as a separate process** and returns exit code and output. |
+| `POST /api/v1/investigations/{inv_id}/plans/{plan_id}/decision` | Human approval or rejection (`approve` role). Body `{"decision": "approved"\|"rejected", "note", "acknowledge_scrutiny"}`. Approval re-runs the independent verifier, enforces four-eyes in OIDC mode, and requires acknowledging scrutiny-flagged actions. Mode becomes `approved`; nothing is executed. |
 | `GET /api/v1/investigations/{inv_id}/evidence/load-bearing` | R5 minimal source-record sets whose falsification invalidates each certificate. |
 | `GET /api/v1/investigations/{inv_id}/evidence-sensitivity` | R4 diff between `conservative_defense` and `trust_filtered` plans per k. |
 | `GET /api/v1/investigations/{inv_id}/report` | Exportable report, `?format=json` (default) or `md`. |

@@ -84,13 +84,17 @@ def test_request_shape_and_success():
 @pytest.mark.parametrize(
     ("response", "match"),
     [
-        (httpx2.Response(200, json=message("", stop="refusal") | {"stop_details": {"type": "refusal", "category": "cyber"}}),
-         "declined"),
+        (
+            httpx2.Response(200, json=message("", stop="refusal") | {"stop_details": {"type": "refusal", "category": "cyber"}}),
+            "declined",
+        ),
         (httpx2.Response(200, json=message("not json at all")), "malformed"),
         (httpx2.Response(200, json=message('{"summary": 3}')), "malformed"),
         (httpx2.Response(200, json=message('{"summary": "x"', stop="max_tokens")), "truncated"),
-        (httpx2.Response(401, json={"type": "error", "error": {"type": "authentication_error", "message": "bad key"}}),
-         "authentication"),
+        (
+            httpx2.Response(401, json={"type": "error", "error": {"type": "authentication_error", "message": "bad key"}}),
+            "authentication",
+        ),
         (httpx2.Response(429, json={"type": "error", "error": {"type": "rate_limit_error", "message": "slow"}}), "rate"),
     ],
 )
@@ -109,8 +113,9 @@ def scripted_claude(req: httpx2.Request) -> httpx2.Response:
     if task == "propose_containment":
         # what a plausible-but-wrong model might say, plus a hallucinated action id
         out: dict[str, Any] = MockProvider._propose_containment(data)
-        out["proposals"].append({"title": "Hallucinated", "action_ids": ["revoke_credential:cred:does-not-exist"],
-                                 "rationale": "x"})
+        out["proposals"].append(
+            {"title": "Hallucinated", "action_ids": ["revoke_credential:cred:does-not-exist"], "rationale": "x"}
+        )
     else:
         out = getattr(MockProvider, f"_{task}")(data)
     return httpx2.Response(200, json=message(json.dumps(out)))
@@ -142,7 +147,9 @@ def test_pipeline_through_real_provider_path_with_advisor_gate(falkor, ws):
     assert by_title["Rotate every exposed credential"]["extra_cost_vs_optimum"] == 0
     assert by_title["Hallucinated"]["verdict"] == "rejected" and "unknown" in by_title["Hallucinated"]["reasons"][0]
     # the evidence (including the injection ticket) reached the model only inside untrusted-data blocks
-    adv_req = next(json.loads(r.content) for r in seen if "TASK: propose_containment" in json.loads(r.content)["messages"][0]["content"])
+    adv_req = next(
+        json.loads(r.content) for r in seen if "TASK: propose_containment" in json.loads(r.content)["messages"][0]["content"]
+    )
     txt = adv_req["messages"][0]["content"]
     assert "SYSTEM OVERRIDE" in txt and txt.index("UNTRUSTED_DATA") < txt.index("SYSTEM OVERRIDE")
 

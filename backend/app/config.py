@@ -11,7 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_prefix="GT_", env_file=".env", extra="ignore")
 
-    env: str = Field("local", pattern="^(local|test|ci)$")  # only local-style envs exist in this build
+    env: str = Field("local", pattern="^(local|test|ci|production)$")
     falkordb_host: str = "localhost"
     falkordb_port: int = 6379
     falkordb_password: str | None = None
@@ -19,7 +19,17 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080"
     # Demo-only auth: header X-GT-Demo-Token must equal this token. Fails closed if unset outside local.
     demo_token: str | None = None
-    auth_mode: str = Field("demo_header", pattern="^(demo_header|disabled_local)$")
+    auth_mode: str = Field("demo_header", pattern="^(demo_header|disabled_local|oidc)$")
+    oidc_issuer: str | None = None
+    oidc_audience: str | None = None
+    oidc_jwks_url: str | None = None
+    oidc_jwks_json: str | None = None  # pinned JWKS document (air-gapped deployments, tests)
+    oidc_algorithms: str = "RS256,ES256"
+    oidc_roles_claim: str = "roles"
+    oidc_workspaces_claim: str = "gt_workspaces"
+    oidc_subject_claim: str = "sub"
+    run_mode: str = Field("inline", pattern="^(inline|queue)$")  # queue: a separate worker process runs investigations
+    require_four_eyes: bool = True  # an approver may not approve an investigation they created (oidc mode)
     llm_provider: str = Field("mock", pattern="^(mock|anthropic|openai_compatible)$")
     llm_endpoint: str | None = None
     llm_model: str | None = None

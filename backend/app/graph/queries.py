@@ -236,3 +236,16 @@ SCHEMA_VERSION_GET = "MATCH (v:SchemaVersion) RETURN max(v.version)"
 SCHEMA_VERSION_SET = "MERGE (v:SchemaVersion {version: $v}) ON CREATE SET v.applied_at = $now"
 COUNT_ALL = "MATCH (n) RETURN count(n)"
 COUNT_EDGES = "MATCH ()-[r]->() RETURN count(r)"
+
+UPDATE_ARTIFACT: dict[str, str] = {
+    label: f"MATCH (x:{label} {{id: $id}}) WHERE x.workspace_id = $ws SET x += $props RETURN properties(x)"
+    for label in ("Plan", "Certificate")
+}
+# Queue mode: a worker claims a queued investigation with an atomic compare-and-set.
+CLAIM_INVESTIGATION = (
+    "MATCH (i:Investigation {id: $id}) WHERE i.workspace_id = $ws AND i.status = 'queued' "
+    "SET i.status = 'running', i.worker = $worker, i.claimed_at = $now RETURN i.id"
+)
+QUEUED_INVESTIGATIONS = (
+    "MATCH (i:Investigation) WHERE i.workspace_id = $ws AND i.status = 'queued' RETURN i.id ORDER BY i.created_at LIMIT $limit"
+)

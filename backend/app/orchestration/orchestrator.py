@@ -75,7 +75,7 @@ class Orchestrator:
 
     # ------------------------------------------------------------------ investigations
     def create_investigation(
-        self, incident_id: str | None = None, K: int = 2, policy: str = "conservative_defense"
+        self, incident_id: str | None = None, K: int = 2, policy: str = "conservative_defense", created_by: str = "system"
     ) -> dict[str, Any]:
         meta = self.repo.meta()
         inc = meta["incident"]
@@ -87,6 +87,7 @@ class Orchestrator:
             "workspace_id": self.repo.ws,
             "incident_id": inc["incident_id"],
             "scenario_id": meta["scenario_id"],
+            "created_by": created_by,
             "title": inc["title"],
             "status": "created",
             "created_at": now_ms(),
@@ -109,6 +110,17 @@ class Orchestrator:
 
     def _set(self, inv_id: str, **props: Any) -> None:
         self.repo.rw(Q.UPDATE_INVESTIGATION, {"id": inv_id, "props": props})
+
+    def enqueue(self, inv_id: str) -> dict[str, Any]:
+        """Queue mode: mark for a worker process; the API process does not run it."""
+        inv = self.get(inv_id)
+        if inv["status"] in ("created", "failed"):
+            self._set(inv_id, status="queued", queued_at=now_ms())
+            self.repo.audit(inv_id, "api", "investigation.queued", {})
+        return self.get(inv_id)
+
+    def claim(self, inv_id: str) -> bool:
+        return bool(self.repo.rw(Q.CLAIM_INVESTIGATION, {"id": inv_id, "worker": self.worker, "now": now_ms()}))
 
     def cancel(self, inv_id: str) -> int:
         self.get(inv_id)
