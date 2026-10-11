@@ -47,7 +47,7 @@ log = logging.getLogger("ghosttrace.orchestrator")
 STAGES = ["investigator", "evidence_verifier", "containment_planner", "red_team", "memory_curator"]
 LEASE_MS = 120_000
 MAX_ATTEMPTS = 2
-BUDGETS = {"investigator": 40, "evidence_verifier": 60, "containment_planner": 20, "red_team": 120, "memory_curator": 20}
+BUDGETS = {"investigator": 40, "evidence_verifier": 60, "containment_planner": 30, "red_team": 120, "memory_curator": 20}
 
 
 def _tid(inv: str, key: str) -> str:

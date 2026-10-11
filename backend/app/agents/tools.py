@@ -34,7 +34,17 @@ ALLOWLIST: dict[str, frozenset[str]] = {
     "evidence_verifier": frozenset(
         {"get_evidence", "find_attack_paths", "get_fact_history", "get_runbooks", "get_snapshot_edges", "get_contradictions"}
     ),
-    "containment_planner": frozenset({"compute_pareto", "compute_certificate", "simulate_intervention", "evidence_sensitivity"}),
+    "containment_planner": frozenset(
+        {
+            "compute_pareto",
+            "compute_certificate",
+            "simulate_intervention",
+            "evidence_sensitivity",
+            "containment_candidates",
+            "get_snapshot_edges",
+            "get_incident_context",
+        }
+    ),
     "red_team": frozenset(
         {"get_certificate", "find_attack_paths", "latent_candidates", "check_latent_nomination", "get_snapshot_edges"}
     ),
@@ -103,11 +113,23 @@ class ToolBox:
         return self._world_cache[tau]
 
     # ------------------------------------------------------------------ tools
-    def _t_get_incident_context(self, incident_id: str) -> dict[str, Any]:
-        rows = self.repo.ro(Q.NODES_BY_IDS, {"ids": [incident_id]})
-        evid = [dict(p) for (p,) in self.repo.ro(Q.INCIDENT_EVIDENCE, {"iid": incident_id})]
+    def _t_get_incident_context(self, incident_id: str | None = None) -> dict[str, Any]:
         meta = self.repo.meta()
-        return {"incident": dict(rows[0][2]) if rows else None, "evidence": evid, "meta_incident": meta["incident"]}
+        iid = incident_id or meta["incident"]["incident_id"]
+        rows = self.repo.ro(Q.NODES_BY_IDS, {"ids": [iid]})
+        evid = [dict(p) for (p,) in self.repo.ro(Q.INCIDENT_EVIDENCE, {"iid": iid})]
+        hard = [{"flow_id": f["flow_id"], "u": f["u"], "v": f["v"]} for f in meta["flows"] if f["kind"] == "hard"]
+        return {
+            "incident": dict(rows[0][2]) if rows else None,
+            "evidence": evid,
+            "meta_incident": meta["incident"],
+            "hard_flows": hard,
+        }
+
+    def _t_containment_candidates(self, T: int, tau: int, policy: str) -> list[dict[str, Any]]:
+        w = self.world(tau)
+        edges = engine.snapshot_edges(w, T, tau, TrustPolicy(policy))
+        return [a.to_dict() for a in engine.candidates_for(w, edges)]
 
     def _t_get_node_details(self, ids: list[str]) -> list[dict[str, Any]]:
         return [

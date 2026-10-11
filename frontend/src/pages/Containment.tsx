@@ -3,10 +3,11 @@ import { api } from "../api";
 import type { Route } from "../App";
 import { PathChips, State, StatusBadge, Synthetic, useAsync } from "../components/common";
 import { ParetoChart } from "../components/ParetoChart";
+import { AdvisorCard, type Advisor } from "../components/Advisor";
 import type { Action, Certificate, GraphData, ParetoPoint } from "../types";
 
 interface ContainmentData {
-  planner: { pareto: ParetoPoint[]; sensitivity: any[]; baseline_b0: any; explanation: string; certificate_ids: string[] } | null;
+  planner: { pareto: ParetoPoint[]; sensitivity: any[]; baseline_b0: any; explanation: string; certificate_ids: string[]; advisor?: Advisor } | null;
   plans: { plan_id: string; k: number; status: string; actions: Action[]; total: number | null; optimality: string; certificate_id?: string; iterations: number; nogoods: string[][]; elapsed_ms: number }[];
   certificates: { certificate_id: string; status: string; k_certified: number; statement: string }[];
   red_team: { findings: any[]; nominations: any[]; tampering_scenarios: any[]; downgraded_certificate_ids: string[] } | null;
@@ -74,6 +75,7 @@ export function ContainmentPage({ invId, go }: { invId: string; go: (r: Route, i
                 ) : <p className="small muted">Same plan under both trust policies.</p>) : <p className="muted small">n/a</p>}
               </section>
             </div>
+            <AdvisorCard advisor={d.data.planner.advisor} onOpenCert={(cid) => go("certificate", invId, cid)} />
             {plan && (
               <section className="card" style={{ marginTop: 16 }}>
                 <div className="row between"><h2>Plan at k = {k}</h2>

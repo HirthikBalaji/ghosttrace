@@ -33,8 +33,25 @@ class Explanation(BaseModel):
     cited_ids: list[str] = []
 
 
+class Nomination(BaseModel):
+    template_id: str
+    src: str
+    dst: str
+    rationale: str
+
+
 class Nominations(BaseModel):
-    nominations: list[dict[str, str]]  # {template_id, src, dst, rationale}
+    nominations: list[Nomination]
+
+
+class ContainmentProposal(BaseModel):
+    title: str
+    action_ids: list[str]
+    rationale: str
+
+
+class ContainmentProposals(BaseModel):
+    proposals: list[ContainmentProposal]
 
 
 SYSTEM_PROMPT = (
@@ -114,6 +131,40 @@ class MockProvider(Provider):
         }
 
     @staticmethod
+    def _propose_containment(s: dict[str, Any]) -> dict[str, Any]:
+        """Deterministic stand-in for a model advisor: the plausible plans a responder (or a model) reaches for."""
+        cands = {c["id"] for c in s.get("candidate_actions", [])}
+        alerted = f"disable_identity:{s.get('alerted_identity')}"
+        out = []
+        if alerted in cands:
+            out.append(
+                {
+                    "title": "Follow the runbook: disable the alerted account",
+                    "action_ids": [alerted],
+                    "rationale": "Runbook guidance for a suspicious developer sign-in.",
+                }
+            )
+        implicated = [f"isolate_workload:{n}" for n in s.get("alert_implicated_nodes", [])]
+        if implicated:
+            out.append(
+                {
+                    "title": "Contain what the alerts implicate",
+                    "action_ids": [alerted, *implicated],
+                    "rationale": "Disable the account and isolate every service named in the alerts.",
+                }
+            )
+        creds = sorted(c for c in cands if c.startswith("revoke_credential:"))
+        if creds:
+            out.append(
+                {
+                    "title": "Rotate every exposed credential",
+                    "action_ids": creds,
+                    "rationale": "Credentials reachable from the compromised hosts must be rotated.",
+                }
+            )
+        return {"proposals": out}
+
+    @staticmethod
     def _llm_only_recommendation(s: dict[str, Any]) -> dict[str, Any]:
         """Baseline B3: keyword-driven recommendation without any graph verification."""
         actions = [f"disable_identity:{s['alerted_identity']}"]
@@ -168,6 +219,10 @@ class OpenAICompatibleProvider(Provider):
 
 def get_provider() -> Provider:
     s = get_settings()
+    if s.llm_provider == "anthropic":
+        from app.agents.claude_provider import ClaudeProvider
+
+        return ClaudeProvider(model=s.llm_model or None)
     return OpenAICompatibleProvider() if s.llm_provider == "openai_compatible" else MockProvider()
 
 

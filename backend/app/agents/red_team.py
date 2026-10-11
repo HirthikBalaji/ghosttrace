@@ -32,8 +32,9 @@ class RedTeam:
         new_latent: list[SnapEdge] = []
         snap = {e.edge_id: e for e in tb.call("get_snapshot_edges", T=T, tau=inp.tau)}
         types = {e.src: e.src_type for e in snap.values()} | {e.dst: e.dst_type for e in snap.values()}
-        for n in noms_raw.nominations:
-            key = (n.get("template_id", ""), n.get("src", ""), n.get("dst", ""))
+        for nom in noms_raw.nominations:
+            n = nom.model_dump()
+            key = (nom.template_id, nom.src, nom.dst)
             if key not in known:
                 nominations.append({**n, "accepted": False, "reason": "nomination references ids the graph did not return"})
                 continue

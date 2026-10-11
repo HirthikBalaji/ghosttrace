@@ -107,6 +107,7 @@ class PlannerOutput(BaseModel):
     sensitivity: list[dict[str, Any]]
     baseline_b0: dict[str, Any]
     explanation: str
+    advisor: dict[str, Any] = {}
 
 
 # ---- F. Red team

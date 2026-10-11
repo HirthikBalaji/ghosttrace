@@ -10,6 +10,7 @@ dependencies = [
   "pydantic-settings==2.15.0",
   "falkordb==1.7.1",
   "httpx>=0.28,<1",
+  "anthropic>=1.13.0",
 ]
 
 [dependency-groups]
@@ -19,6 +20,7 @@ dev = [
   "ruff>=0.14",
   "mypy>=1.18",
   "pip-audit>=2.9",
+  "httpx2>=2.0",
 ]
 
 [tool.uv]

@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     # Demo-only auth: header X-GT-Demo-Token must equal this token. Fails closed if unset outside local.
     demo_token: str | None = None
     auth_mode: str = Field("demo_header", pattern="^(demo_header|disabled_local)$")
-    llm_provider: str = Field("mock", pattern="^(mock|openai_compatible)$")
+    llm_provider: str = Field("mock", pattern="^(mock|anthropic|openai_compatible)$")
     llm_endpoint: str | None = None
     llm_model: str | None = None
     llm_api_key: str | None = None
