@@ -1,0 +1,52 @@
+[project]
+name = "ghosttrace"
+version = "0.1.0"
+description = "GHOSTTRACE — open-world containment over a bitemporal FalkorDB graph (synthetic demo)"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "fastapi==0.143.0",
+  "uvicorn==0.54.0",
+  "pydantic==2.14.0",
+  "pydantic-settings==2.15.0",
+  "falkordb==1.7.1",
+  "httpx>=0.28,<1",
+]
+
+[dependency-groups]
+dev = [
+  "pytest==9.1.1",
+  "hypothesis==6.169.0",
+  "ruff>=0.14",
+  "mypy>=1.18",
+  "pip-audit>=2.9",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "../verifier/tests", "../evals/tests"]
+pythonpath = [".", ".."]
+markers = [
+  "integration: requires a running FalkorDB (GT_FALKORDB_HOST/PORT)",
+  "docker: requires the docker CLI to restart containers",
+]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "SIM"]
+ignore = ["S101", "S311", "B008", "S105", "S106"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+exclude = ["tests/"]
