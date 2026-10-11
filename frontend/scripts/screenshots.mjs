@@ -1,0 +1,28 @@
+// Regenerate docs/screenshots against a running stack: node scripts/screenshots.mjs ../docs/screenshots
+import { chromium } from "@playwright/test";
+const out = process.argv[2];
+const b = await chromium.launch();
+const p = await b.newPage({ viewport: { width: 1500, height: 1000 } });
+const errs = [];
+p.on("console", (m) => m.type() === "error" && errs.push(m.text()));
+p.on("pageerror", (e) => errs.push(String(e)));
+await p.goto("http://localhost:4173/");
+await p.getByRole("button", { name: /Reset scenario & investigate/ }).first().click();
+await p.waitForURL(/investigation/);
+await p.waitForSelector("text=memory curator");
+await p.waitForTimeout(3500);
+await p.screenshot({ path: `${out}/1-investigation.png`, fullPage: true });
+await p.locator("nav").getByRole("button", { name: "Hypotheses" }).click(); await p.waitForTimeout(1200);
+await p.screenshot({ path: `${out}/2-hypotheses.png`, fullPage: true });
+await p.locator("nav").getByRole("button", { name: "Containment" }).click(); await p.waitForTimeout(1500);
+await p.screenshot({ path: `${out}/3-containment.png`, fullPage: true });
+await p.locator("nav").getByRole("button", { name: "Certificates" }).click(); await p.waitForTimeout(1000);
+await p.getByRole("button", { name: /Verify with independent verifier/ }).click(); await p.waitForTimeout(2000);
+await p.screenshot({ path: `${out}/4-certificate.png`, fullPage: true });
+await p.locator("nav").getByRole("button", { name: "Company Brain" }).click(); await p.waitForTimeout(500);
+await p.getByRole("button", { name: /Compare: as known then/ }).click(); await p.waitForTimeout(1500);
+await p.screenshot({ path: `${out}/5-brain.png`, fullPage: true });
+await p.locator("nav").getByRole("button", { name: "Memory & audit" }).click(); await p.waitForTimeout(1500);
+await p.screenshot({ path: `${out}/6-memory.png`, fullPage: true });
+console.log("errors:", JSON.stringify(errs));
+await b.close();
