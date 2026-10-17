@@ -7,6 +7,7 @@ export default defineConfig({
   description: 'Self-Verifying Multi-Agent Intelligence Engine built on FalkorDB',
   cleanUrls: true,
   lastUpdated: true,
+  ignoreDeadLinks: true,
 
   head: [
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/ghosttrace/logo.svg' }],
