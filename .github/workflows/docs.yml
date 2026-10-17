@@ -26,8 +26,8 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install VitePress
-        run: npm install -D vitepress@1.6.4
+      - name: Install VitePress and MathJax
+        run: npm install -D vitepress@1.6.4 markdown-it-mathjax3
 
       - name: Build VitePress docs
         run: npx vitepress build docs
