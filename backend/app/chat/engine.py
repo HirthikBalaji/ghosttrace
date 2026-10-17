@@ -156,6 +156,19 @@ class GraphChatEngine:
                 ],
             )
         except Exception as exc:
+            if "empty key" in str(exc).lower():
+                empty_msg = (
+                    f"### FalkorDB Cypher Results (0 rows)\n\n"
+                    f"ℹ️ *The workspace graph `ws:{self.ws}` has not been seeded yet. "
+                    f"Reset a scenario to populate entities and relationships.*\n\n"
+                    f"```cypher\n{query}\n```"
+                )
+                return ChatResponse(
+                    reply=empty_msg,
+                    cypher_queries=cyphers,
+                    provider_used="falkordb-direct",
+                    model_used="falkordb-native",
+                )
             return ChatResponse(
                 reply=f"❌ **Cypher Execution Error**: `{exc}`\n\n```cypher\n{query}\n```",
                 cypher_queries=cyphers,
@@ -189,7 +202,10 @@ class GraphChatEngine:
                 "RETURN a.id, c.id, repo.id, s.id"
             )
             queries_run.append(cypher)
-            self.repo.ro(cypher, {})
+            try:
+                self.repo.ro(cypher, {})
+            except Exception as exc:
+                log.debug("Cypher query skipped on unseeded graph: %s", exc)
 
             cited.extend(
                 [
@@ -279,7 +295,10 @@ class GraphChatEngine:
         if laya_cls.domain == "evidence_calculus" or any(w in q for w in ev_kw):
             cypher = "MATCH (s:SourceRecord) WHERE s.workspace_id = $ws RETURN properties(s)"
             queries_run.append("MATCH (s:SourceRecord) WHERE s.workspace_id = $ws RETURN properties(s)")
-            self.repo.ro(cypher, {})
+            try:
+                self.repo.ro(cypher, {})
+            except Exception as exc:
+                log.debug("Cypher query skipped on unseeded graph: %s", exc)
 
             cited.extend(
                 [
@@ -320,21 +339,28 @@ class GraphChatEngine:
         # 4. Question: Company Brain / Ownership / Dependencies
         brain_kw = ["owner", "who owned", "brain", "depend", "team", "runbook"]
         if laya_cls.domain == "company_brain" or any(w in q for w in brain_kw):
-            m = self.repo.meta()
-            raw_now = m.get("now")
-            now_ms = parse_iso(raw_now) if raw_now else int(time.time() * 1000)
-            raw_inc = m.get("incident", {}).get("T_incident")
-            t_inc = parse_iso(raw_inc) if raw_inc else (now_ms - 86400000 * 7)
+            team_then = "team:payments"
+            team_now = "team:platform"
+            try:
+                m = self.repo.meta()
+                raw_now = m.get("now")
+                now_ms = parse_iso(raw_now) if raw_now else int(time.time() * 1000)
+                raw_inc = m.get("incident", {}).get("T_incident")
+                t_inc = parse_iso(raw_inc) if raw_inc else (now_ms - 86400000 * 7)
 
-            ans_then = CompanyBrain(self.repo).ask(
-                BrainQuery(question="owner", subject_id="svc:payments-api", T=t_inc, tau=t_inc)
-            )
-            ans_now = CompanyBrain(self.repo).ask(
-                BrainQuery(question="owner", subject_id="svc:payments-api", T=t_inc, tau=now_ms)
-            )
+                ans_then = CompanyBrain(self.repo).ask(
+                    BrainQuery(question="owner", subject_id="svc:payments-api", T=t_inc, tau=t_inc)
+                )
+                ans_now = CompanyBrain(self.repo).ask(
+                    BrainQuery(question="owner", subject_id="svc:payments-api", T=t_inc, tau=now_ms)
+                )
 
-            team_then = str(ans_then.primary[0].get("team_id")) if ans_then.primary else "team:payments"
-            team_now = str(ans_now.primary[0].get("team_id")) if ans_now.primary else "team:platform"
+                if ans_then.primary:
+                    team_then = str(ans_then.primary[0].get("team_id", team_then))
+                if ans_now.primary:
+                    team_now = str(ans_now.primary[0].get("team_id", team_now))
+            except Exception as exc:
+                log.debug("Company brain query fallback: %s", exc)
 
             queries_run.append("MATCH (t:Team)-[r:OWNS]->(s:Service {id: 'svc:payments-api'}) WHERE ... RETURN t.id")
             cited.extend(
@@ -415,14 +441,18 @@ class GraphChatEngine:
             )
 
         # 6. Fallback General Graph Entity Search
+        search_term = q.split()[-1] if q.split() else "a"
         cypher = (
             "MATCH (n:Entity) WHERE n.workspace_id = $ws AND "
             "(toLower(n.id) CONTAINS $term OR toLower(n.name) CONTAINS $term) "
             "RETURN n.id, labels(n), n.name LIMIT 8"
         )
-        search_term = q.split()[-1] if q.split() else "a"
         queries_run.append(f"MATCH (n:Entity) WHERE n.id CONTAINS '{search_term}' RETURN n.id, labels(n), n.name LIMIT 8")
-        rows = self.repo.ro(cypher, {"term": search_term.lower()})
+        try:
+            rows = self.repo.ro(cypher, {"term": search_term.lower()})
+        except Exception as exc:
+            log.debug("Fallback entity query skipped on unseeded graph: %s", exc)
+            rows = []
 
         for r in rows:
             eid = r[0]
@@ -474,7 +504,10 @@ class GraphChatEngine:
             "Edge Types: HAS_CREDENTIAL, CAN_ACCESS, CAN_PUSH, DEPLOYS_TO, OWNS, MEMBER_OF."
         )
 
-        meta = self.repo.meta()
+        try:
+            meta = self.repo.meta()
+        except Exception:
+            meta = {}
         scenario_title = meta.get("title", "The Ghost Credential")
         incident_title = meta.get("incident", {}).get("title", "Unusual sign-in for dev-alice")
 

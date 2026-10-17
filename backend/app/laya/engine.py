@@ -99,11 +99,17 @@ class LayaService:
 
     def get_status(self) -> dict[str, Any]:
         router = _get_router()
-        import laya
+        version = "unknown"
+        try:
+            import laya
+
+            version = getattr(laya, "__version__", "unknown")
+        except ImportError:
+            pass
 
         return {
             "available": router is not None,
-            "version": getattr(laya, "__version__", "unknown"),
+            "version": version,
             "repository": "https://github.com/NandhaKishorM/laya",
             "models_supported": [
                 "convaiinnovations/laya (ModernBERT-large, English)",
