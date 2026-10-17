@@ -144,4 +144,3 @@ def test_laya_scrutiny(client: TestClient) -> None:
     assert r.status_code == 200
     data = r.json()["data"]
     assert data["scrutiny_level"] in ("safe", "review_required", "high_disruption")
-
