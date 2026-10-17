@@ -14,16 +14,13 @@ stdlib-only verifier checks it. Specialised agents coordinate through durable sh
 > authorisation, but this build has no executor. The bundled scenarios are synthetic. The local profile uses a
 > demo-only header token; the production profile requires OIDC (see [Production deployment](#production-deployment)).
 
-![Story mode](docs/screenshots/0-story.png)
+### 🎬 Demo Video & Walkthrough
 
-### 🎬 Demo Video
+[![GHOSTTRACE Demo Video — Click to Watch on YouTube](docs/screenshots/0-story.png)](https://www.youtube.com/watch?v=nerrSAtqa4w)
 
-<video src="ghosttrace_demo_with_voiceover.mp4" controls="controls" width="100%" poster="docs/screenshots/0-story.png">
-  <a href="ghosttrace_demo_with_voiceover.mp4">Download Demo Video</a>
-</video>
-
+- 📺 **Watch Demo on YouTube**: [https://www.youtube.com/watch?v=nerrSAtqa4w](https://www.youtube.com/watch?v=nerrSAtqa4w)
 - 📚 **Interactive Documentation Website**: [https://hirthikbalaji.github.io/ghosttrace/](https://hirthikbalaji.github.io/ghosttrace/)
-- 🎙️ **Narrated Walkthrough (with voiceover)**: [`ghosttrace_demo_with_voiceover.mp4`](ghosttrace_demo_with_voiceover.mp4) (Full end-to-end investigation, certified containment, and Company Brain walkthrough voiced by Claire via KittenTTS 2)
+- 🎙️ **Narrated Walkthrough (local video)**: [`ghosttrace_demo_with_voiceover.mp4`](ghosttrace_demo_with_voiceover.mp4) (Full end-to-end investigation, certified containment, and Company Brain walkthrough voiced by Claire via KittenTTS 2)
 - 🔇 **Silent Walkthrough**: [`docs/demo/ghosttrace-demo.webm`](docs/demo/ghosttrace-demo.webm)
 - 🌐 **Lightweight Interactive Graph View**: [`http://localhost:8000/graph-view`](http://localhost:8000/graph-view) (Standalone Cytoscape.js canvas served directly by FastAPI without needing Node/Vite; color-coded by agent action: 🔵 Investigator, 🟢 Verifier, 🔴 Red-Team / CEGAR Cut, 🟣 Latent / $\kappa$)
 
