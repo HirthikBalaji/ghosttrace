@@ -9,12 +9,13 @@ import uuid
 from collections import Counter
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, PlainTextResponse, Response
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, Response
 
 from app.api.routes import router
 from app.audit.logging import configure, request_id_var
@@ -111,7 +112,13 @@ async def context(request: Request, call_next: Callable[[Request], Awaitable[Res
     METRICS["latency_ms_sum"] += int(ms)
     resp.headers["X-Request-ID"] = rid
     for k, v in SECURITY_HEADERS.items():
-        if k == "Content-Security-Policy" and request.url.path in ("/docs", "/redoc"):
+        if k == "Content-Security-Policy" and request.url.path in (
+            "/docs",
+            "/redoc",
+            "/graph-view",
+            "/graph",
+            "/graph.html",
+        ):
             continue
         resp.headers.setdefault(k, v)
     log.info("request", extra={"path": request.url.path, "method": request.method, "status": resp.status_code, "ms": ms})
@@ -172,3 +179,17 @@ def metrics() -> str:
 
 
 app.include_router(router, prefix="/api/v1")
+
+_STATIC_GRAPH_HTML = Path(__file__).parent / "static" / "graph_view.html"
+
+
+@app.get("/graph-view", response_class=HTMLResponse)
+@app.get("/graph", response_class=HTMLResponse)
+@app.get("/graph.html", response_class=HTMLResponse)
+def graph_view_html() -> HTMLResponse:
+    """Lightweight interactive Cytoscape.js graph view (standalone, no node/npm build required)."""
+    if _STATIC_GRAPH_HTML.is_file():
+        content = _STATIC_GRAPH_HTML.read_text(encoding="utf-8")
+    else:
+        content = "<html><body>Graph view template missing</body></html>"
+    return HTMLResponse(content=content)

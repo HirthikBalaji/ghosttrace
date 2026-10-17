@@ -97,13 +97,15 @@ def main():
         (106.5, "[stern] (((GHOSTTRACE))): Proven containment. Zero guesswork."),
     ]
 
-    os.makedirs("voice_clips", exist_ok=True)
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    clips_dir = os.path.join(repo_root, "media", "voice_clips")
+    os.makedirs(clips_dir, exist_ok=True)
     processed_clips = []
     current_sample = 0
 
     print("Processing and placing voiceover clips...")
     for i, (target_sec, text) in enumerate(script_cues, 1):
-        clip_path = f"voice_clips/clip_{i:02d}.wav"
+        clip_path = os.path.join(clips_dir, f"clip_{i:02d}.wav")
         if os.path.exists(clip_path):
             print(f"[{i}/{len(script_cues)}] Using existing clip: {clip_path}")
             raw_audio, sr = sf.read(clip_path)
@@ -148,14 +150,14 @@ def main():
     if peak > 0.95:
         timeline = timeline * (0.95 / peak)
 
-    voiceover_wav = "ghosttrace_voiceover.wav"
+    voiceover_wav = os.path.join(repo_root, "media", "ghosttrace_voiceover.wav")
     sf.write(voiceover_wav, timeline, sample_rate)
     audio_duration = len(timeline) / sample_rate
     print(f"\nMaster voiceover track saved: {voiceover_wav} ({audio_duration:.2f}s)")
 
     # Multiplex with video using ffmpeg
-    input_video = "../ghosttrace_demo.mp4"
-    output_video = "../ghosttrace_demo_with_voiceover.mp4"
+    input_video = os.path.join(repo_root, "ghosttrace_demo.mp4")
+    output_video = os.path.join(repo_root, "ghosttrace_demo_with_voiceover.mp4")
     artifact_dirs = [
         "/Users/balaji/.gemini/antigravity-cli/brain/2cf27088-7468-461b-895a-5667d85edffb",
         "/Users/balaji/.gemini/antigravity-cli/brain/b5351b7b-b816-42cb-88b9-03ee49650cd9",
