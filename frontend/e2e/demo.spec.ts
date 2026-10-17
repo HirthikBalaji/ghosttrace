@@ -11,7 +11,7 @@ test("full demo flow: seed → investigate → plan → verify → brain → mem
   await page.goto("/");
   await expect(page.getByText("SYNTHETIC DEMO")).toBeVisible();
   await axe(page, "command");
-  await page.getByRole("button", { name: /Reset scenario & investigate/ }).first().click();
+  await page.getByRole("button", { name: /Reset scenario & (investigate|open graph)/i }).first().click();
   await page.waitForURL(/investigation/);
   await expect(page.locator(".stage.completed")).toHaveCount(5, { timeout: 60_000 });
   await expect(page.getByText("CONFIRMED").first()).toBeVisible();

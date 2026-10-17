@@ -629,7 +629,7 @@ export function CommandCenter({
                   disabled={busy !== null}
                   onClick={() => start(s.scenario_id, "investigation")}
                 >
-                  {busy ? busy : "Reset & Open Graph"}
+                  {busy ? busy : "Reset scenario & investigate"}
                 </button>
               </div>
             </article>
