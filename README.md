@@ -14,7 +14,14 @@ stdlib-only verifier checks it. Specialised agents coordinate through durable sh
 
 ![Story mode](docs/screenshots/0-story.png)
 
-Demo video (silent walkthrough): [`docs/demo/ghosttrace-demo.webm`](docs/demo/ghosttrace-demo.webm).
+### 🎬 Demo Video
+
+<video src="ghosttrace_demo_with_voiceover.mp4" controls="controls" width="100%" poster="docs/screenshots/0-story.png">
+  <a href="ghosttrace_demo_with_voiceover.mp4">Download Demo Video</a>
+</video>
+
+- 🎙️ **Narrated Walkthrough (with voiceover)**: [`ghosttrace_demo_with_voiceover.mp4`](ghosttrace_demo_with_voiceover.mp4) (Full end-to-end investigation, certified containment, and Company Brain walkthrough voiced by Claire via KittenTTS 2)
+- 🔇 **Silent Walkthrough**: [`docs/demo/ghosttrace-demo.webm`](docs/demo/ghosttrace-demo.webm)
 
 ## What it does (one integrated workflow, three tracks)
 

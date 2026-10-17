@@ -1,7 +1,7 @@
 # Demo script (≈3½ minutes)
 
 Shortest version: open **Story mode** and walk the seven steps. Each step's "See the evidence" button jumps to the
-detailed view. A silent recording of the walkthrough is in `docs/demo/ghosttrace-demo.webm`.
+detailed view. The full narrated walkthrough is in [`ghosttrace_demo_with_voiceover.mp4`](../ghosttrace_demo_with_voiceover.mp4) (and silent recording in `docs/demo/ghosttrace-demo.webm`).
 
 **Setup.** Run `docker compose up -d --build` and open http://localhost:8080, or use `make api` and `make web`.
 Everything shown is synthetic, and every action is a simulation. This script was rehearsed: the Playwright test
