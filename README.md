@@ -22,6 +22,7 @@ stdlib-only verifier checks it. Specialised agents coordinate through durable sh
   <a href="ghosttrace_demo_with_voiceover.mp4">Download Demo Video</a>
 </video>
 
+- 📚 **Interactive Documentation Website**: [https://hirthikbalaji.github.io/ghosttrace/](https://hirthikbalaji.github.io/ghosttrace/)
 - 🎙️ **Narrated Walkthrough (with voiceover)**: [`ghosttrace_demo_with_voiceover.mp4`](ghosttrace_demo_with_voiceover.mp4) (Full end-to-end investigation, certified containment, and Company Brain walkthrough voiced by Claire via KittenTTS 2)
 - 🔇 **Silent Walkthrough**: [`docs/demo/ghosttrace-demo.webm`](docs/demo/ghosttrace-demo.webm)
 - 🌐 **Lightweight Interactive Graph View**: [`http://localhost:8000/graph-view`](http://localhost:8000/graph-view) (Standalone Cytoscape.js canvas served directly by FastAPI without needing Node/Vite; color-coded by agent action: 🔵 Investigator, 🟢 Verifier, 🔴 Red-Team / CEGAR Cut, 🟣 Latent / $\kappa$)

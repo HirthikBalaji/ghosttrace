@@ -21,3 +21,5 @@ data/falkordb/
 backend/.env
 frontend/.env
 *.wav
+docs/.vitepress/dist/
+docs/.vitepress/cache/
