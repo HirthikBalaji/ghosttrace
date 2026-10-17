@@ -23,6 +23,13 @@ stdlib-only verifier checks it. Specialised agents coordinate through durable sh
 - 🎙️ **Narrated Walkthrough (with voiceover)**: [`ghosttrace_demo_with_voiceover.mp4`](ghosttrace_demo_with_voiceover.mp4) (Full end-to-end investigation, certified containment, and Company Brain walkthrough voiced by Claire via KittenTTS 2)
 - 🔇 **Silent Walkthrough**: [`docs/demo/ghosttrace-demo.webm`](docs/demo/ghosttrace-demo.webm)
 
+## 🏆 Tracks Entered
+
+GHOSTTRACE is entered into **all three tracks**:
+1. **Agents That Act on Connected Data**: Time-valid multi-hop attack path enumeration over bitemporal graphs, CEGAR containment optimizer computing the Price-of-Certainty curve, and out-of-process certified verification.
+2. **Agent Memory and Coordination**: 5-agent swarm (Investigator, Verifier, Planner, Red Team, Curator) coordinating directly via FalkorDB atomic CAS leases, durable tasks, handoffs, and provenance-tracked memory that survives restarts.
+3. **Company Brain**: Bitemporal organizational knowledge graph tracking ownership, dependencies, and runbooks across world time $T$ and knowledge time $\tau$, resolving conflicting and stale CMDB records.
+
 ## What it does (one integrated workflow, three tracks)
 
 | Track | What you can see in the product |
@@ -126,6 +133,63 @@ evals/             generator/ (seeded benchmark families with planted ground tru
 docs/              architecture, schema, hard problem, why FalkorDB, API, threat model, evaluation, ops, demo
 scripts/           seed, smoke test, env check, profiling, backup/restore, secret scan
 ```
+
+## 📊 Graph Data Model
+
+The product runs entirely on **FalkorDB** (one graph per workspace: `ws:<workspace_id>`). All facts carry bitemporal intervals `[valid_from, valid_to)` (world time $T$) and `[tx_from, tx_to)` (knowledge time $\tau$).
+
+```text
+(:Entity {id, name, segment, cost_*})
+  -[:HAS_CREDENTIAL {tx_from, tx_to, valid_from, valid_to, kind, source_ids}]-> (:Credential)
+  -[:AUTHENTICATES_AS]-> (:Identity)
+  -[:CAN_ASSUME]-> (:Identity)
+  -[:CAN_ACCESS]-> (:Service | :Asset)
+  -[:CONNECTS_TO]-> (:Host | :Service)
+  -[:DEPLOYS_TO]-> (:Service)
+  -[:OWNS {tx_from, tx_to, valid_from, valid_to, stale}]-> (:Service)
+  -[:DEPENDS_ON]-> (:Service | :Asset)
+```
+- **Entity Labels**: `Person`, `Team`, `Identity`, `Credential`, `Asset`, `Service`, `Repository`, `Deployment`, `BuildRunner`, `Host`, `Group`, `Policy`, `Runbook`, `Document`, `Decision`, `SecurityEvent`, `Incident`.
+- **Durable Coordination Nodes**: `:AgentTask`, `:AgentOutput`, `:Hypothesis`, `:Plan`, `:Certificate`, `:Memory`, `:SourceRecord`, `:AuditEvent`.
+- Full schema documentation: [docs/graph-schema.md](docs/graph-schema.md).
+
+## ⚡ Core Cypher Queries & Graph Algorithms
+
+FalkorDB is the primary database and sits in the live path of every operation:
+
+1. **Bitemporal As-Of Predicate** (`app/temporal/predicate.py`):
+```cypher
+(r.tx_from <= $tau AND (r.tx_to IS NULL OR $tau < r.tx_to)
+ AND (r.valid_to IS NULL OR $T < r.valid_to)
+ AND (r.valid_from IS NULL OR r.valid_from <= $T))
+```
+2. **Multi-Hop Counterfactual Path Enumeration** (Track 1):
+```cypher
+MATCH p=(s:Entity)-[*1..8]->(t:Entity) 
+WHERE s.id IN $sources AND t.id IN $targets
+  AND all(r IN relationships(p) WHERE r.workspace_id = $ws AND r.edge_id IN $allowed AND <TP>)
+RETURN [r IN relationships(p) | r.edge_id], [n IN nodes(p) | n.id] LIMIT $limit
+```
+3. **Atomic Task Leases & Swarm Coordination** (Track 2):
+```cypher
+MATCH (t:AgentTask {task_id: $tid, workspace_id: $ws})
+WHERE t.status IN ['PENDING', 'FAILED'] OR t.lease_expires_at < $now
+SET t.status = 'RUNNING', t.lease_owner = $worker_id, t.lease_expires_at = $expires
+RETURN t.task_id
+```
+4. **Bitemporal Knowledge Traversal** (Track 3):
+```cypher
+MATCH (t:Entity:Team)-[r:OWNS]->(s:Entity {id: $sid}) 
+WHERE r.workspace_id = $ws AND <TP>
+RETURN t.id, t.name, r.edge_id, r.stale, r.valid_from, r.valid_to, r.tx_from
+```
+Detailed query catalog and benchmarks: [docs/why-falkordb.md](docs/why-falkordb.md).
+
+## 🤖 AI Assistance Disclosure (Rule 11)
+
+In compliance with Hackathon Rule 11:
+- AI coding assistants (Gemini, Claude, Cursor) were utilized during the hackathon for code autocompletion, boilerplate scaffolding, and voiceover script timing.
+- All core architectures, mathematical proofs, Evidence Calculus rules (R1–R4), CEGAR min-cut algorithms, bitemporal schemas, and FalkorDB Cypher queries were designed, implemented, and verified by the authors.
 
 ## Documentation
 
