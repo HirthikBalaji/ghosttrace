@@ -16,7 +16,7 @@ class Settings(BaseSettings):
     falkordb_port: int = 6379
     falkordb_password: str | None = None
     query_timeout_ms: int = Field(2000, ge=10, le=60000)
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080"
+    cors_origins: str = "http://localhost:5174,http://127.0.0.1:5174,http://localhost:5173,http://127.0.0.1:5173,http://localhost:8080"
     # Demo-only auth: header X-GT-Demo-Token must equal this token. Fails closed if unset outside local.
     demo_token: str | None = None
     auth_mode: str = Field("demo_header", pattern="^(demo_header|disabled_local|oidc)$")

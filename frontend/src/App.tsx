@@ -7,12 +7,13 @@ import { ContainmentPage } from "./pages/Containment";
 import { CertificatePage } from "./pages/Certificate";
 import { BrainPage } from "./pages/Brain";
 import { MemoryAuditPage } from "./pages/MemoryAudit";
+import { ChatPage } from "./pages/Chat";
 import { api } from "./api";
 import { authMode, signOut } from "./auth";
 
 export interface Me { subject: string; roles: string[]; auth_mode: string; warning: string | null }
 
-export type Route = "command" | "story" | "investigation" | "hypotheses" | "containment" | "certificate" | "brain" | "memory";
+export type Route = "command" | "story" | "investigation" | "hypotheses" | "containment" | "certificate" | "brain" | "memory" | "chat";
 const NAV: { id: Route; label: string; icon: string; needsInv?: boolean }[] = [
   { id: "command", label: "Command center", icon: "◉" },
   { id: "story", label: "Story mode", icon: "▶", needsInv: true },
@@ -22,6 +23,7 @@ const NAV: { id: Route; label: string; icon: string; needsInv?: boolean }[] = [
   { id: "certificate", label: "Certificates", icon: "✔", needsInv: true },
   { id: "brain", label: "Company Brain", icon: "❖" },
   { id: "memory", label: "Memory & audit", icon: "☰" },
+  { id: "chat", label: "Graph Copilot", icon: "💬" },
 ];
 
 function readHash(): { route: Route; inv: string | null; cert: string | null } {
@@ -86,7 +88,7 @@ export default function App() {
           </div>
         </nav>
         <main id="main" tabIndex={-1}>
-          {loc.route === "command" && <CommandCenter onOpen={(id) => go("investigation", id)} />}
+          {loc.route === "command" && <CommandCenter onOpen={(id) => go("investigation", id)} go={go} activeInv={inv} />}
           {loc.route === "story" && inv && <StoryPage invId={inv} go={go} />}
           {loc.route === "investigation" && inv && <InvestigationPage invId={inv} go={go} />}
           {loc.route === "hypotheses" && inv && <HypothesesPage invId={inv} />}
@@ -94,6 +96,7 @@ export default function App() {
           {loc.route === "certificate" && inv && <CertificatePage invId={inv} certId={loc.cert} go={go} />}
           {loc.route === "brain" && <BrainPage />}
           {loc.route === "memory" && <MemoryAuditPage invId={inv} />}
+          {loc.route === "chat" && <ChatPage activeInv={inv} go={go} />}
           {!inv && NAV.find((n) => n.id === loc.route)?.needsInv && <div className="state">No investigation selected. Start one from the command center.</div>}
         </main>
       </div>

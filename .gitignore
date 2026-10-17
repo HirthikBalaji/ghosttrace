@@ -16,3 +16,7 @@ frontend/playwright-report/
 backups/
 .env.prod
 .prodtest/
+bin/
+data/falkordb/
+backend/.env
+frontend/.env

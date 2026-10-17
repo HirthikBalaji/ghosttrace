@@ -83,3 +83,21 @@ asserts the route list below equals the OpenAPI route list).
 | `GET /api/v1/memory` | Memory entries with category, provenance, scope, taint, status, freshness. |
 | `GET /api/v1/audit/{inv_id}` | Append-only audit events for an investigation (stage starts/completions, tool calls, verifications, simulations). |
 | `GET /api/v1/whoami` | Current (demo) principal and workspace; states that auth is demo-only. |
+
+## Graph Copilot and Chat
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/v1/chat/providers` | Active and available LLM/engine providers and configurations. |
+| `POST /api/v1/chat` | Conversational graph copilot grounded in FalkorDB with direct Cypher query execution and configurable LLM providers. |
+
+## Laya System 1 Decisions
+
+| Endpoint | Purpose |
+|---|---|
+| `GET /api/v1/laya/status` | Laya System 1 decision engine status, version, and active models. |
+| `POST /api/v1/laya/triage` | Non-autoregressive incident classification and k-robustness selection. |
+| `POST /api/v1/laya/evidence-check` | Evidence Calculus Rule R2 tampering detection over source record claims. |
+| `POST /api/v1/laya/scrutiny` | Containment action operational blast radius and disruption scoring. |
+
+

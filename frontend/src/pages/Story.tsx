@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../api";
 import type { Route } from "../App";
 import type { Advisor } from "../components/Advisor";
@@ -31,6 +31,16 @@ export function StoryPage({ invId, go }: { invId: string; go: (r: Route, inv?: s
     setVerdict(r.accepted ? `ACCEPTED by the independent verifier (${r.output})` : `REJECTED: ${r.output}`);
   }
 
+  useEffect(() => {
+    if (!p && !c.error && !c.loading) {
+      const timer = setTimeout(() => {
+        c.reload();
+        h.reload();
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [p, c.error, c.loading, c.reload, h.reload]);
+
   const Step = ({ n, title, children, to }: { n: number; title: string; children: React.ReactNode; to?: Route }) => (
     <section className="card story-step" aria-labelledby={`s${n}`}>
       <div className="row between">
@@ -47,7 +57,7 @@ export function StoryPage({ invId, go }: { invId: string; go: (r: Route, inv?: s
         <div><h1>The Ghost Credential, in seven steps <Synthetic /></h1>
           <p>Every number here is computed live from the graph for this investigation.</p></div>
       </div>
-      <State loading={c.loading || h.loading} error={c.error || h.error} empty={!p && "Run the investigation first."}>
+      <State loading={c.loading || h.loading} error={c.error || h.error} empty={!p && "Executing investigation swarm… Waiting for containment planner output."}>
         {p && (
           <div className="stack">
             <Step n={1} title="The alert is not the answer" to="investigation">

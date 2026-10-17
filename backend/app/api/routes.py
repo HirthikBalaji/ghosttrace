@@ -685,3 +685,92 @@ def whoami(p: Auth, request: Request) -> dict[str, Any]:
             "warning": None if p.mode == "oidc" else "demo-only authentication; not production auth",
         }
     )
+
+
+# ------------------------------------------------------------------ chat copilot
+from app.chat.engine import ChatRequest, GraphChatEngine  # noqa: E402
+
+
+@router.post("/chat")
+def chat(req: ChatRequest, repo: Repo) -> dict[str, Any]:
+    engine = GraphChatEngine(repo)
+    resp = engine.chat(req)
+    return ok(resp.model_dump())
+
+
+@router.get("/chat/providers")
+def chat_providers() -> dict[str, Any]:
+    s = get_settings()
+    current = (s.llm_provider or "mock").lower()
+    return ok(
+        {
+            "default_provider": current,
+            "configured_model": s.llm_model,
+            "configured_endpoint": s.llm_endpoint,
+            "providers": [
+                {
+                    "id": "mock",
+                    "name": "FalkorDB Graph Engine (Offline & Fast)",
+                    "description": "Zero external dependencies, sub-15ms response time, direct Cypher integration.",
+                    "requires_key": False,
+                    "is_active": current == "mock",
+                },
+                {
+                    "id": "openai_compatible",
+                    "name": "OpenAI / Local LLM (Ollama, vLLM, Groq)",
+                    "description": "OpenAI-compatible /chat/completions endpoint. Supports Ollama (http://localhost:11434/v1).",
+                    "requires_key": False,
+                    "is_active": current == "openai_compatible",
+                },
+                {
+                    "id": "anthropic",
+                    "name": "Anthropic Claude",
+                    "description": "Claude 3.5 Sonnet / Opus reasoning grounded in structured FalkorDB evidence.",
+                    "requires_key": True,
+                    "is_active": current == "anthropic",
+                },
+            ],
+        }
+    )
+
+
+# ------------------------------------------------------------------ laya system 1 decisions
+from app.laya.engine import get_laya  # noqa: E402
+
+
+class LayaTriageRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = Field(..., min_length=1, max_length=2000)
+
+
+class LayaEvidenceCheckRequest(BaseModel):
+    record_summary: str = Field(..., min_length=1, max_length=500)
+    claim_text: str = Field(..., min_length=1, max_length=1000)
+
+
+class LayaScrutinyRequest(BaseModel):
+    action_id: str = Field(..., min_length=1, max_length=200)
+    context: str = Field(default="", max_length=1000)
+
+
+@router.get("/laya/status")
+def laya_status() -> dict[str, Any]:
+    return ok(get_laya().get_status())
+
+
+@router.post("/laya/triage")
+def laya_triage(req: LayaTriageRequest, p: Auth) -> dict[str, Any]:
+    res = get_laya().triage_incident(req.title, req.description)
+    return ok(res.model_dump())
+
+
+@router.post("/laya/evidence-check")
+def laya_evidence_check(req: LayaEvidenceCheckRequest, p: Auth) -> dict[str, Any]:
+    res = get_laya().evaluate_evidence_tampering(req.record_summary, req.claim_text)
+    return ok(res.model_dump())
+
+
+@router.post("/laya/scrutiny")
+def laya_scrutiny(req: LayaScrutinyRequest, p: Auth) -> dict[str, Any]:
+    res = get_laya().scrutinize_action(req.action_id, req.context)
+    return ok(res.model_dump())

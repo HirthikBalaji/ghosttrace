@@ -3,10 +3,16 @@ SHELL := /bin/bash
 BACK := cd backend &&
 export GT_DEMO_TOKEN ?= dev-demo-token
 
-.PHONY: help check-env up down falkordb install seed reset api web test test-unit test-integration e2e evals evals-quick lint typecheck audit secrets ci backup restore
+.PHONY: help check-env up down falkordb install seed reset api web test test-unit test-integration e2e evals evals-quick lint typecheck audit secrets ci backup restore start stop
 
 help:  ## list targets
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*##/\t/'
+
+start:  ## start all services (FalkorDB, API, UI) locally without Docker
+	scripts/start_all.sh
+
+stop:  ## stop all local services
+	scripts/stop_all.sh
 
 check-env:  ## verify toolchain + FalkorDB client smoke test
 	scripts/check_environment.sh
@@ -15,8 +21,8 @@ install:  ## install backend + frontend deps (pinned lockfiles)
 	$(BACK) uv sync --frozen
 	cd frontend && npm ci --no-audit --no-fund
 
-falkordb:  ## start only FalkorDB (persistent volume) on localhost:6379
-	docker compose up -d falkordb
+falkordb:  ## start FalkorDB locally without Docker
+	scripts/start_falkordb.sh
 
 up:  ## full stack in Docker: http://localhost:8080 (API :8000)
 	docker compose up -d --build
@@ -32,7 +38,7 @@ reset: seed  ## alias: reset the demo workspace
 api:  ## run API locally on :8000
 	$(BACK) uv run uvicorn app.main:app --port 8000
 
-web:  ## run the UI dev server on :5173 (proxies /api to :8000)
+web:  ## run the UI dev server on :5174 (proxies /api to :8000)
 	cd frontend && npm run dev
 
 test:  ## all backend tests (unit, property, integration — needs FalkorDB)
