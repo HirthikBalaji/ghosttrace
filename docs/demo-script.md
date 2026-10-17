@@ -1,5 +1,4 @@
 # Demo script (≈3½ minutes)
-<iframe width="100%" height="450" src="https://www.youtube.com/embed/nerrSAtqa4w" title="GhostTrace Demo Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen style="border-radius: 8px; margin: 16px 0;"></iframe>
 
 Shortest version: open **Story mode** and walk the seven steps. Each step's "See the evidence" button jumps to the
 detailed view. The full narrated walkthrough is available on [YouTube](https://www.youtube.com/watch?v=nerrSAtqa4w) and in [`ghosttrace_demo_with_voiceover.mp4`](../ghosttrace_demo_with_voiceover.mp4) (silent recording in `docs/demo/ghosttrace-demo.webm`).

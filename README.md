@@ -21,9 +21,6 @@ stdlib-only verifier checks it. Specialised agents coordinate through durable sh
   <a href="https://www.youtube.com/watch?v=nerrSAtqa4w">Watch on YouTube: https://www.youtube.com/watch?v=nerrSAtqa4w</a>
 </video>
 
-<!-- Embedded YouTube iframe for web previews & markdown viewers -->
-<iframe width="100%" height="450" src="https://www.youtube.com/embed/nerrSAtqa4w" title="GhostTrace Demo Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-
 <p align="center">
   <a href="https://www.youtube.com/watch?v=nerrSAtqa4w">
     <strong>▶️ Watch on YouTube: https://www.youtube.com/watch?v=nerrSAtqa4w</strong>
