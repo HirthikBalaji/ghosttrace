@@ -183,9 +183,9 @@ app.include_router(router, prefix="/api/v1")
 _STATIC_GRAPH_HTML = Path(__file__).parent / "static" / "graph_view.html"
 
 
-@app.get("/graph-view", response_class=HTMLResponse)
-@app.get("/graph", response_class=HTMLResponse)
-@app.get("/graph.html", response_class=HTMLResponse)
+@app.get("/graph-view", response_class=HTMLResponse, include_in_schema=False)
+@app.get("/graph", response_class=HTMLResponse, include_in_schema=False)
+@app.get("/graph.html", response_class=HTMLResponse, include_in_schema=False)
 def graph_view_html() -> HTMLResponse:
     """Lightweight interactive Cytoscape.js graph view (standalone, no node/npm build required)."""
     if _STATIC_GRAPH_HTML.is_file():
