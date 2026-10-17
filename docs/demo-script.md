@@ -23,3 +23,33 @@ Everything shown is synthetic, and every action is a simulation. This script was
 | 2:45 | Memory & audit | The episodic memory and the promoted semantic memory (6 independent roots). False-flag and injection memories are **tainted**. Handoffs and the audit trail are listed. Then restart: `docker compose restart backend` — the investigation and memory are all still there. |
 | 3:05 | Command center → *Ghost Credential B* | A different topology. The hard nightly-export flow rules out the cheapest network cut, so the computed plan differs. |
 | 3:20 | Open `evals/report.md` | 0 soundness violations across 900 certificates; baselines vs GHOSTTRACE with Wilson intervals; limitations: synthetic only, unmodeled edges. |
+
+## 📸 Step-by-Step UI Screenshots
+
+### 1. Story Mode & Incident Overview
+*Guided narrative through The Ghost Credential scenario with live evidence inspector.*
+![Story Mode](/screenshots/0-story.png)
+
+### 2. 5-Agent Swarm Live Timeline & Coordination
+*5 specialized agents coordinate via FalkorDB CAS leases and durable task handoffs.*
+![Investigation Timeline](/screenshots/1-investigation.png)
+
+### 3. Hypotheses & Bitemporal Reasoning ($T$ vs $\tau$)
+*Multi-hop attack path reconstruction under world time $T$ and knowledge time $\tau$.*
+![Hypotheses](/screenshots/2-hypotheses.png)
+
+### 4. CEGAR Containment & Price of Certainty Curve
+*CEGAR optimizer computes the Price-of-Certainty curve ($k=0, 1, 2$ robustness).*
+![Containment](/screenshots/3-containment.png)
+
+### 5. Machine-Checkable Proof Certificate
+*Independent stdlib-only verifier checks containment proof out-of-process.*
+![Certificate](/screenshots/4-certificate.png)
+
+### 6. Company Brain (CMDB Reconciliation)
+*Reconciles conflicting ownership and stale CMDB records across time.*
+![Company Brain](/screenshots/5-brain.png)
+
+### 7. Durable Agent Memory & Provenance Audit
+*Quarantined tainted inputs, provenance tracking, and state that survives backend restarts.*
+![Agent Memory](/screenshots/6-memory.png)

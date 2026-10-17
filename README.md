@@ -60,6 +60,26 @@ The headline scenario, **The Ghost Credential**, works like this:
   Each is simulated and certified: "disable the account" and "isolate whatever the alerts name" are rejected with the
   surviving path or broken hard flow; "rotate the exposed credential" is accepted at the certified optimum.
 
+## 📸 Demo Screenshots (UI Walkthrough)
+
+Here is a visual tour of GhostTrace across each stage of an investigation:
+
+| 1. Story Mode & Incident Overview | 2. 5-Agent Swarm Live Timeline |
+|:---:|:---:|
+| [![Story Mode](docs/screenshots/0-story.png)](docs/screenshots/0-story.png)<br><sub>*Guided narrative through The Ghost Credential scenario with live evidence inspector*</sub> | [![Investigation Timeline](docs/screenshots/1-investigation.png)](docs/screenshots/1-investigation.png)<br><sub>*5 specialized agents coordinate via FalkorDB CAS leases and durable task handoffs*</sub> |
+
+| 3. Hypotheses & Bitemporal Reasoning | 4. CEGAR Containment & Price of Certainty |
+|:---:|:---:|
+| [![Hypotheses](docs/screenshots/2-hypotheses.png)](docs/screenshots/2-hypotheses.png)<br><sub>*Multi-hop attack path reconstruction under world time $T$ and knowledge time $\tau$*</sub> | [![Containment](docs/screenshots/3-containment.png)](docs/screenshots/3-containment.png)<br><sub>*CEGAR optimizer computes the Price-of-Certainty curve ($k=0, 1, 2$ robustness)*</sub> |
+
+| 5. Machine-Checkable Proof Certificate | 6. Company Brain (CMDB Reconciliation) |
+|:---:|:---:|
+| [![Certificate](docs/screenshots/4-certificate.png)](docs/screenshots/4-certificate.png)<br><sub>*Independent stdlib-only verifier checks containment proof out-of-process*</sub> | [![Company Brain](docs/screenshots/5-brain.png)](docs/screenshots/5-brain.png)<br><sub>*Reconciles conflicting ownership and stale CMDB records across time*</sub> |
+
+| 7. Durable Agent Memory & Provenance Audit |
+|:---:|
+| [![Agent Memory](docs/screenshots/6-memory.png)](docs/screenshots/6-memory.png)<br><sub>*Quarantined tainted inputs, provenance tracking, and state that survives backend restarts*</sub> |
+
 ## Using a real model
 
 ```bash
